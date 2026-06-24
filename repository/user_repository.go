@@ -55,3 +55,8 @@ func FindUsersByRole(role string) ([]model.User, error) {
 	err := config.DB.Where("role = ?", role).Find(&users).Error
 	return users, err
 }
+
+// DeleteUser menghapus user berdasarkan ID
+func DeleteUser(id uint) error {
+	return config.DB.Delete(&model.User{}, id).Error
+}

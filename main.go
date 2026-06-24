@@ -7,7 +7,6 @@ import (
 	"be_silapor/router"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
 )
@@ -25,14 +24,10 @@ func main() {
 	godotenv.Load()
 
 	app := fiber.New()
-	app.Use(logger.New())
 
-	// CORS configuration
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: "*",
-		AllowMethods: "GET,POST,PUT,DELETE,OPTIONS",
-		AllowHeaders: "Origin,Content-Type,Accept,Authorization",
-	}))
+	// Setup Middleware (CORS & Logger)
+	config.SetupCORS(app)
+	app.Use(logger.New())
 
 	// Connect database
 	config.ConnectDatabase()

@@ -61,4 +61,13 @@ func SetupRoutes(app *fiber.App) {
 
 	// DELETE /api/laporan/:id → hanya admin yang bisa menghapus laporan
 	api.Delete("/laporan/:id", middleware.JWTProtected("admin"), handler.DeleteLaporan)
+
+	// ── Admin Dashboard Routes ────────────────────────────────────────────────
+	api.Get("/dashboard/admin", middleware.JWTProtected("admin"), handler.GetAdminDashboard)
+
+	// ── Users Routes (Admin Only) ─────────────────────────────────────────────
+	userAdmin := api.Group("/users", middleware.JWTProtected("admin"))
+	userAdmin.Get("/", handler.GetAllUsers)
+	userAdmin.Post("/", handler.CreateUserByAdmin)
+	userAdmin.Delete("/:id", handler.DeleteUser)
 }
