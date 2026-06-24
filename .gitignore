@@ -1,0 +1,41 @@
+# Environment variables (JANGAN PERNAH commit file ini!)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+be_silapor.exe
+
+# Go test artifacts
+*.test
+*.out
+
+# Go workspace
+go.work
+go.work.sum
+
+# Vendor directory (uncomment jika tidak menggunakan vendor)
+# vendor/
+
+# IDE & OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
