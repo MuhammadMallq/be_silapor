@@ -2,106 +2,123 @@ package model
 
 import "time"
 
-// User represents the users table
+// User merepresentasikan tabel "users" di database
+// Menyimpan data akun pengguna: mahasiswa, petugas, dan admin
 type User struct {
 	ID        uint      `json:"id" gorm:"primaryKey"`
 	Nama      string    `json:"nama" gorm:"not null"`
-	Username  string    `json:"username" gorm:"uniqueIndex;not null"`
-	Password  string    `json:"-" gorm:"not null"`
-	Role      string    `json:"role" gorm:"not null;default:mahasiswa"`
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
+	Username  string    `json:"username" gorm:"uniqueIndex;not null"` // Harus unik, tidak boleh sama
+	Password  string    `json:"-" gorm:"not null"`                    // json:"-" berarti password TIDAK dikirim ke response
+	Role      string    `json:"role" gorm:"not null;default:mahasiswa"` // nilai: mahasiswa / petugas / admin
+	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`     // Diisi otomatis saat data dibuat
 }
 
-// KategoriFasilitas represents the kategori_fasilitas table
+// KategoriFasilitas merepresentasikan tabel "kategori_fasilitas"
+// Menyimpan jenis-jenis fasilitas kampus (misal: Listrik, Air, Meja, dll)
 type KategoriFasilitas struct {
 	ID           uint   `json:"id" gorm:"primaryKey"`
 	NamaKategori string `json:"nama_kategori" gorm:"not null"`
-	PetugasID    *uint  `json:"petugas_id"`
-	SLAJam       int    `json:"sla_jam" gorm:"not null;default:48"`
+	PetugasID    *uint  `json:"petugas_id"`                   // Pointer (*uint) agar bisa bernilai null (belum ada petugas)
+	SLAJam       int    `json:"sla_jam" gorm:"not null;default:48"` // Batas waktu penanganan dalam jam (default 48 jam)
 
-	// Relations
+	// Relasi: satu kategori punya satu petugas (opsional)
+	// omitempty berarti field ini tidak dikirim jika nilainya kosong/null
 	Petugas *User `json:"petugas,omitempty" gorm:"foreignKey:PetugasID"`
 }
 
-// Laporan represents the laporan table
+// Laporan merepresentasikan tabel "laporan"
+// Menyimpan setiap pengaduan kerusakan fasilitas yang dikirim mahasiswa
 type Laporan struct {
 	ID             uint       `json:"id" gorm:"primaryKey"`
-	PelaporID      uint       `json:"pelapor_id" gorm:"not null"`
-	KategoriID     uint       `json:"kategori_id" gorm:"not null"`
-	Lokasi         string     `json:"lokasi" gorm:"not null"`
-	Deskripsi      string     `json:"deskripsi" gorm:"not null"`
-	FotoURL        string     `json:"foto_url"`
-	Status         string     `json:"status" gorm:"not null;default:dilaporkan"`
-	Prioritas      string     `json:"prioritas" gorm:"not null;default:normal"`
-	TanggalLapor   time.Time  `json:"tanggal_lapor" gorm:"autoCreateTime"`
-	TanggalSelesai *time.Time `json:"tanggal_selesai"`
+	PelaporID      uint       `json:"pelapor_id" gorm:"not null"`   // ID mahasiswa yang membuat laporan
+	KategoriID     uint       `json:"kategori_id" gorm:"not null"`  // ID kategori fasilitas yang dilaporkan
+	Lokasi         string     `json:"lokasi" gorm:"not null"`       // Lokasi kerusakan (misal: "Gedung A Lantai 2")
+	Deskripsi      string     `json:"deskripsi" gorm:"not null"`    // Penjelasan detail kerusakan
+	FotoURL        string     `json:"foto_url"`                     // Link foto kerusakan (opsional)
+	Status         string     `json:"status" gorm:"not null;default:dilaporkan"` // dilaporkan/ditugaskan/dikerjakan/selesai
+	Prioritas      string     `json:"prioritas" gorm:"not null;default:normal"`  // normal / tinggi (naik otomatis jika lewat SLA)
+	TanggalLapor   time.Time  `json:"tanggal_lapor" gorm:"autoCreateTime"` // Diisi otomatis saat laporan dibuat
+	TanggalSelesai *time.Time `json:"tanggal_selesai"` // Diisi saat status berubah menjadi "selesai"
 
-	// Relations
+	// Relasi: laporan dimiliki oleh satu pelapor dan satu kategori
 	Pelapor  *User              `json:"pelapor,omitempty" gorm:"foreignKey:PelaporID"`
 	Kategori *KategoriFasilitas `json:"kategori,omitempty" gorm:"foreignKey:KategoriID"`
 }
 
-// RiwayatStatus represents the riwayat_status table
+// RiwayatStatus merepresentasikan tabel "riwayat_status"
+// Mencatat setiap perubahan status pada sebuah laporan (seperti timeline/log)
 type RiwayatStatus struct {
 	ID         uint      `json:"id" gorm:"primaryKey"`
-	LaporanID  uint      `json:"laporan_id" gorm:"not null"`
-	Status     string    `json:"status" gorm:"not null"`
-	Keterangan string    `json:"keterangan"`
-	Waktu      time.Time `json:"waktu" gorm:"autoCreateTime"`
+	LaporanID  uint      `json:"laporan_id" gorm:"not null"` // Laporan mana yang berubah statusnya
+	Status     string    `json:"status" gorm:"not null"`     // Status baru saat perubahan terjadi
+	Keterangan string    `json:"keterangan"`                 // Penjelasan singkat perubahan status
+	Waktu      time.Time `json:"waktu" gorm:"autoCreateTime"` // Waktu perubahan status
 
-	// Relations
+	// Relasi ke tabel laporan
 	Laporan *Laporan `json:"laporan,omitempty" gorm:"foreignKey:LaporanID"`
 }
 
-// TableName overrides
+// TableName memberi tahu GORM nama tabel yang digunakan di database
+// Tanpa ini, GORM akan pakai nama default (users → "users", dst — sudah sama)
 func (User) TableName() string              { return "users" }
 func (KategoriFasilitas) TableName() string { return "kategori_fasilitas" }
 func (Laporan) TableName() string           { return "laporan" }
 func (RiwayatStatus) TableName() string     { return "riwayat_status" }
 
-// ---- Request / Response structs ----
+// ---- Struct untuk Request & Response API ----
+// Struct-struct ini BUKAN tabel database, hanya dipakai untuk membaca/mengirim data JSON
 
+// Response adalah format standar semua response API
+// Semua endpoint mengembalikan JSON dengan format ini
 type Response struct {
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Message string      `json:"message"`          // Pesan singkat hasil operasi
+	Data    interface{} `json:"data,omitempty"`   // Data yang dikembalikan (bisa apapun)
+	Error   string      `json:"error,omitempty"`  // Pesan error jika ada (tidak dikirim jika kosong)
 }
 
+// RegisterRequest adalah body JSON yang diterima saat endpoint POST /register dipanggil
 type RegisterRequest struct {
 	Nama     string `json:"nama" validate:"required"`
 	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required,min=6"`
-	Role     string `json:"role"`
+	Role     string `json:"role"` // Opsional: mahasiswa (default) / petugas / admin
 }
 
+// LoginRequest adalah body JSON yang diterima saat endpoint POST /login dipanggil
 type LoginRequest struct {
 	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required"`
 }
 
+// LoginResponse adalah data yang dikembalikan setelah login berhasil
+// Berisi token JWT dan data user yang bisa dipakai oleh frontend
 type LoginResponse struct {
-	Token string `json:"token"`
-	User  User   `json:"user"`
+	Token string `json:"token"` // JWT token untuk autentikasi request berikutnya
+	User  User   `json:"user"`  // Data profil user yang baru login
 }
 
+// ChangePasswordRequest adalah body JSON untuk endpoint PUT /changepassword
 type ChangePasswordRequest struct {
 	OldPassword string `json:"old_password" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required,min=6"`
 }
 
+// CreateLaporanRequest adalah body JSON untuk endpoint POST /laporan
 type CreateLaporanRequest struct {
-	KategoriID uint   `json:"kategori_id" validate:"required"`
-	Lokasi     string `json:"lokasi" validate:"required"`
-	Deskripsi  string `json:"deskripsi" validate:"required"`
-	FotoURL    string `json:"foto_url"`
+	KategoriID uint   `json:"kategori_id" validate:"required"` // Wajib: pilih kategori fasilitas
+	Lokasi     string `json:"lokasi" validate:"required"`      // Wajib: lokasi kerusakan
+	Deskripsi  string `json:"deskripsi" validate:"required"`   // Wajib: penjelasan kerusakan
+	FotoURL    string `json:"foto_url"`                        // Opsional: link foto
 }
 
+// UpdateStatusRequest adalah body JSON untuk endpoint PUT /laporan/:id/status
 type UpdateStatusRequest struct {
-	Status string `json:"status" validate:"required"`
+	Status string `json:"status" validate:"required"` // Nilai: dilaporkan/ditugaskan/dikerjakan/selesai
 }
 
+// KategoriRequest adalah body JSON untuk endpoint POST/PUT /kategori
 type KategoriRequest struct {
-	NamaKategori string `json:"nama_kategori" validate:"required"`
-	PetugasID    *uint  `json:"petugas_id"`
-	SLAJam       int    `json:"sla_jam"`
+	NamaKategori string `json:"nama_kategori" validate:"required"` // Nama kategori fasilitas
+	PetugasID    *uint  `json:"petugas_id"`                        // ID petugas yang bertanggung jawab (opsional)
+	SLAJam       int    `json:"sla_jam"`                           // Batas waktu penanganan dalam jam
 }
