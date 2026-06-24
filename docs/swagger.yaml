@@ -1,0 +1,535 @@
+basePath: /
+definitions:
+  model.ChangePasswordRequest:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      old_password:
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  model.CreateLaporanRequest:
+    properties:
+      deskripsi:
+        type: string
+      foto_url:
+        type: string
+      kategori_id:
+        type: integer
+      lokasi:
+        type: string
+    required:
+    - deskripsi
+    - kategori_id
+    - lokasi
+    type: object
+  model.KategoriFasilitas:
+    properties:
+      id:
+        type: integer
+      nama_kategori:
+        type: string
+      petugas:
+        allOf:
+        - $ref: '#/definitions/model.User'
+        description: Relations
+      petugas_id:
+        type: integer
+      sla_jam:
+        type: integer
+    type: object
+  model.KategoriRequest:
+    properties:
+      nama_kategori:
+        type: string
+      petugas_id:
+        type: integer
+      sla_jam:
+        type: integer
+    required:
+    - nama_kategori
+    type: object
+  model.Laporan:
+    properties:
+      deskripsi:
+        type: string
+      foto_url:
+        type: string
+      id:
+        type: integer
+      kategori:
+        $ref: '#/definitions/model.KategoriFasilitas'
+      kategori_id:
+        type: integer
+      lokasi:
+        type: string
+      pelapor:
+        allOf:
+        - $ref: '#/definitions/model.User'
+        description: Relations
+      pelapor_id:
+        type: integer
+      prioritas:
+        type: string
+      status:
+        type: string
+      tanggal_lapor:
+        type: string
+      tanggal_selesai:
+        type: string
+    type: object
+  model.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  model.LoginResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/model.User'
+    type: object
+  model.RegisterRequest:
+    properties:
+      nama:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    required:
+    - nama
+    - password
+    - username
+    type: object
+  model.RiwayatStatus:
+    properties:
+      id:
+        type: integer
+      keterangan:
+        type: string
+      laporan:
+        allOf:
+        - $ref: '#/definitions/model.Laporan'
+        description: Relations
+      laporan_id:
+        type: integer
+      status:
+        type: string
+      waktu:
+        type: string
+    type: object
+  model.UpdateStatusRequest:
+    properties:
+      status:
+        type: string
+    required:
+    - status
+    type: object
+  model.User:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      nama:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact: {}
+  description: API untuk Sistem Pengaduan & Tracking Fasilitas Kampus
+  title: SiLapor API
+  version: "1.0"
+paths:
+  /api/kategori:
+    get:
+      description: Mengambil semua kategori fasilitas
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.KategoriFasilitas'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Daftar kategori fasilitas
+      tags:
+      - Kategori
+    post:
+      consumes:
+      - application/json
+      description: Admin menambah kategori fasilitas baru
+      parameters:
+      - description: Data kategori
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.KategoriRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.KategoriFasilitas'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tambah kategori baru
+      tags:
+      - Kategori
+  /api/kategori/{id}:
+    delete:
+      description: Admin menghapus kategori fasilitas
+      parameters:
+      - description: Kategori ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus kategori
+      tags:
+      - Kategori
+    put:
+      consumes:
+      - application/json
+      description: Admin mengubah data kategori fasilitas
+      parameters:
+      - description: Kategori ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data kategori
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.KategoriRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.KategoriFasilitas'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ubah kategori
+      tags:
+      - Kategori
+  /api/laporan:
+    get:
+      description: Mengambil daftar laporan sesuai role user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Laporan'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Daftar laporan
+      tags:
+      - Laporan
+    post:
+      consumes:
+      - application/json
+      description: Mahasiswa membuat laporan kerusakan baru
+      parameters:
+      - description: Data laporan
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateLaporanRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Laporan'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Buat laporan baru
+      tags:
+      - Laporan
+  /api/laporan/{id}:
+    delete:
+      description: Admin menghapus laporan
+      parameters:
+      - description: Laporan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus laporan
+      tags:
+      - Laporan
+    get:
+      description: Mengambil detail satu laporan
+      parameters:
+      - description: Laporan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Laporan'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Detail laporan
+      tags:
+      - Laporan
+  /api/laporan/{id}/riwayat:
+    get:
+      description: Melihat timeline riwayat perubahan status
+      parameters:
+      - description: Laporan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.RiwayatStatus'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Riwayat status laporan
+      tags:
+      - Laporan
+  /api/laporan/{id}/status:
+    put:
+      consumes:
+      - application/json
+      description: Petugas mengubah status laporan
+      parameters:
+      - description: Laporan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Status baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Laporan'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ubah status laporan
+      tags:
+      - Laporan
+  /changepassword:
+    put:
+      consumes:
+      - application/json
+      description: Mengubah password user yang sedang login
+      parameters:
+      - description: Data password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ubah password
+      tags:
+      - Auth
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: Login dan mendapatkan JWT token
+      parameters:
+      - description: Data login
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Login user
+      tags:
+      - Auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Mendaftarkan user baru ke sistem
+      parameters:
+      - description: Data registrasi
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register user baru
+      tags:
+      - Auth
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

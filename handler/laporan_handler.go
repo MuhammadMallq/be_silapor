@@ -1,0 +1,337 @@
+package handler
+
+import (
+	"strconv"
+	"time"
+
+	"be_silapor/model"
+	"be_silapor/repository"
+
+	"github.com/gofiber/fiber/v2"
+)
+
+// GetAllLaporan godoc
+// @Summary Daftar laporan
+// @Description Mengambil daftar laporan sesuai role user
+// @Tags Laporan
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Router /api/laporan [get]
+func GetAllLaporan(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uint)
+	role := c.Locals("role").(string)
+
+	var laporans []model.Laporan
+	var err error
+
+	switch role {
+	case "admin":
+		laporans, err = repository.FindAllLaporan()
+	case "petugas":
+		laporans, err = repository.FindLaporanByKategoriPetugasID(userID)
+	case "mahasiswa":
+		laporans, err = repository.FindLaporanByPelaporID(userID)
+	default:
+		return c.Status(fiber.StatusForbidden).JSON(model.Response{
+			Message: "role tidak dikenali",
+		})
+	}
+
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
+			Message: "gagal mengambil data laporan",
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(model.Response{
+		Message: "berhasil mengambil data laporan",
+		Data:    laporans,
+	})
+}
+
+// GetLaporanByID godoc
+// @Summary Detail laporan
+// @Description Mengambil detail satu laporan
+// @Tags Laporan
+// @Produce json
+// @Param id path int true "Laporan ID"
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Failure 404 {object} model.Response
+// @Router /api/laporan/{id} [get]
+func GetLaporanByID(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "ID tidak valid",
+			Error:   err.Error(),
+		})
+	}
+
+	laporan, err := repository.FindLaporanByID(uint(id))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(model.Response{
+			Message: "laporan tidak ditemukan",
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(model.Response{
+		Message: "berhasil mengambil detail laporan",
+		Data:    laporan,
+	})
+}
+
+// CreateLaporan godoc
+// @Summary Buat laporan baru
+// @Description Mahasiswa membuat laporan kerusakan baru
+// @Tags Laporan
+// @Accept json
+// @Produce json
+// @Param body body model.CreateLaporanRequest true "Data laporan"
+// @Security BearerAuth
+// @Success 201 {object} model.Response
+// @Failure 400 {object} model.Response
+// @Router /api/laporan [post]
+func CreateLaporan(c *fiber.Ctx) error {
+	userID := c.Locals("user_id").(uint)
+
+	var req model.CreateLaporanRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "payload tidak valid",
+			Error:   err.Error(),
+		})
+	}
+
+	if req.KategoriID == 0 || req.Lokasi == "" || req.Deskripsi == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "kategori, lokasi, dan deskripsi wajib diisi",
+		})
+	}
+
+	// Verify kategori exists
+	kategori, err := repository.FindKategoriByID(req.KategoriID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "kategori tidak ditemukan",
+			Error:   err.Error(),
+		})
+	}
+
+	// Determine initial status based on whether petugas is assigned
+	initialStatus := "dilaporkan"
+	if kategori.PetugasID != nil {
+		initialStatus = "ditugaskan"
+	}
+
+	laporan := model.Laporan{
+		PelaporID:  userID,
+		KategoriID: req.KategoriID,
+		Lokasi:     req.Lokasi,
+		Deskripsi:  req.Deskripsi,
+		FotoURL:    req.FotoURL,
+		Status:     initialStatus,
+		Prioritas:  "normal",
+	}
+
+	if err := repository.CreateLaporan(&laporan); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
+			Message: "gagal membuat laporan",
+			Error:   err.Error(),
+		})
+	}
+
+	// Create initial riwayat
+	riwayat := model.RiwayatStatus{
+		LaporanID:  laporan.ID,
+		Status:     initialStatus,
+		Keterangan: "Laporan baru dibuat",
+	}
+	repository.CreateRiwayat(&riwayat)
+
+	// If auto-assigned, create second riwayat entry
+	if initialStatus == "ditugaskan" {
+		riwayatAssign := model.RiwayatStatus{
+			LaporanID:  laporan.ID,
+			Status:     "ditugaskan",
+			Keterangan: "Otomatis ditugaskan ke petugas kategori",
+		}
+		repository.CreateRiwayat(&riwayatAssign)
+	}
+
+	// Reload with relations
+	result, _ := repository.FindLaporanByID(laporan.ID)
+
+	return c.Status(fiber.StatusCreated).JSON(model.Response{
+		Message: "laporan berhasil dibuat",
+		Data:    result,
+	})
+}
+
+// UpdateStatusLaporan godoc
+// @Summary Ubah status laporan
+// @Description Petugas mengubah status laporan
+// @Tags Laporan
+// @Accept json
+// @Produce json
+// @Param id path int true "Laporan ID"
+// @Param body body model.UpdateStatusRequest true "Status baru"
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Failure 400 {object} model.Response
+// @Failure 404 {object} model.Response
+// @Router /api/laporan/{id}/status [put]
+func UpdateStatusLaporan(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "ID tidak valid",
+			Error:   err.Error(),
+		})
+	}
+
+	var req model.UpdateStatusRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "payload tidak valid",
+			Error:   err.Error(),
+		})
+	}
+
+	// Validate status
+	validStatuses := map[string]bool{
+		"dilaporkan": true,
+		"ditugaskan": true,
+		"dikerjakan": true,
+		"selesai":    true,
+	}
+	if !validStatuses[req.Status] {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "status tidak valid. Gunakan: dilaporkan, ditugaskan, dikerjakan, atau selesai",
+		})
+	}
+
+	laporan, err := repository.FindLaporanByID(uint(id))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(model.Response{
+			Message: "laporan tidak ditemukan",
+			Error:   err.Error(),
+		})
+	}
+
+	laporan.Status = req.Status
+
+	// If status is "selesai", set tanggal_selesai
+	if req.Status == "selesai" {
+		now := time.Now()
+		laporan.TanggalSelesai = &now
+	}
+
+	if err := repository.UpdateLaporan(laporan); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
+			Message: "gagal mengubah status laporan",
+			Error:   err.Error(),
+		})
+	}
+
+	// Create riwayat entry
+	keterangan := "Status diubah menjadi " + req.Status
+	if req.Status == "selesai" {
+		keterangan = "Laporan telah selesai ditangani"
+	}
+
+	riwayat := model.RiwayatStatus{
+		LaporanID:  laporan.ID,
+		Status:     req.Status,
+		Keterangan: keterangan,
+	}
+	repository.CreateRiwayat(&riwayat)
+
+	return c.JSON(model.Response{
+		Message: "status laporan berhasil diubah",
+		Data:    laporan,
+	})
+}
+
+// DeleteLaporan godoc
+// @Summary Hapus laporan
+// @Description Admin menghapus laporan
+// @Tags Laporan
+// @Produce json
+// @Param id path int true "Laporan ID"
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Failure 404 {object} model.Response
+// @Router /api/laporan/{id} [delete]
+func DeleteLaporan(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "ID tidak valid",
+			Error:   err.Error(),
+		})
+	}
+
+	_, err = repository.FindLaporanByID(uint(id))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(model.Response{
+			Message: "laporan tidak ditemukan",
+			Error:   err.Error(),
+		})
+	}
+
+	if err := repository.DeleteLaporan(uint(id)); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
+			Message: "gagal menghapus laporan",
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(model.Response{
+		Message: "laporan berhasil dihapus",
+	})
+}
+
+// GetRiwayatLaporan godoc
+// @Summary Riwayat status laporan
+// @Description Melihat timeline riwayat perubahan status
+// @Tags Laporan
+// @Produce json
+// @Param id path int true "Laporan ID"
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Router /api/laporan/{id}/riwayat [get]
+func GetRiwayatLaporan(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "ID tidak valid",
+			Error:   err.Error(),
+		})
+	}
+
+	// Verify laporan exists
+	_, err = repository.FindLaporanByID(uint(id))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(model.Response{
+			Message: "laporan tidak ditemukan",
+			Error:   err.Error(),
+		})
+	}
+
+	riwayats, err := repository.FindRiwayatByLaporanID(uint(id))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
+			Message: "gagal mengambil riwayat status",
+			Error:   err.Error(),
+		})
+	}
+
+	return c.JSON(model.Response{
+		Message: "berhasil mengambil riwayat status laporan",
+		Data:    riwayats,
+	})
+}
