@@ -34,10 +34,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.KategoriFasilitas"
-                            }
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -74,14 +71,13 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.KategoriFasilitas"
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -127,21 +123,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.KategoriFasilitas"
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -173,15 +167,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -206,10 +198,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.Laporan"
-                            }
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -246,14 +235,13 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/model.Laporan"
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -287,14 +275,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Laporan"
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -326,15 +313,13 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -368,10 +353,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.RiwayatStatus"
-                            }
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -417,21 +399,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.Laporan"
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "404": {
                         "description": "Not Found",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -470,22 +450,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -519,21 +496,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/model.LoginResponse"
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -567,22 +542,19 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     },
                     "409": {
                         "description": "Conflict",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/model.Response"
                         }
                     }
                 }
@@ -628,31 +600,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.KategoriFasilitas": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "nama_kategori": {
-                    "type": "string"
-                },
-                "petugas": {
-                    "description": "Relations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.User"
-                        }
-                    ]
-                },
-                "petugas_id": {
-                    "type": "integer"
-                },
-                "sla_jam": {
-                    "type": "integer"
-                }
-            }
-        },
         "model.KategoriRequest": {
             "type": "object",
             "required": [
@@ -670,52 +617,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.Laporan": {
-            "type": "object",
-            "properties": {
-                "deskripsi": {
-                    "type": "string"
-                },
-                "foto_url": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "kategori": {
-                    "$ref": "#/definitions/model.KategoriFasilitas"
-                },
-                "kategori_id": {
-                    "type": "integer"
-                },
-                "lokasi": {
-                    "type": "string"
-                },
-                "pelapor": {
-                    "description": "Relations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.User"
-                        }
-                    ]
-                },
-                "pelapor_id": {
-                    "type": "integer"
-                },
-                "prioritas": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "tanggal_lapor": {
-                    "type": "string"
-                },
-                "tanggal_selesai": {
-                    "type": "string"
-                }
-            }
-        },
         "model.LoginRequest": {
             "type": "object",
             "required": [
@@ -728,17 +629,6 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
-                }
-            }
-        },
-        "model.LoginResponse": {
-            "type": "object",
-            "properties": {
-                "token": {
-                    "type": "string"
-                },
-                "user": {
-                    "$ref": "#/definitions/model.User"
                 }
             }
         },
@@ -765,30 +655,14 @@ const docTemplate = `{
                 }
             }
         },
-        "model.RiwayatStatus": {
+        "model.Response": {
             "type": "object",
             "properties": {
-                "id": {
-                    "type": "integer"
-                },
-                "keterangan": {
+                "data": {},
+                "error": {
                     "type": "string"
                 },
-                "laporan": {
-                    "description": "Relations",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/model.Laporan"
-                        }
-                    ]
-                },
-                "laporan_id": {
-                    "type": "integer"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "waktu": {
+                "message": {
                     "type": "string"
                 }
             }
@@ -800,26 +674,6 @@ const docTemplate = `{
             ],
             "properties": {
                 "status": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.User": {
-            "type": "object",
-            "properties": {
-                "created_at": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "nama": {
-                    "type": "string"
-                },
-                "role": {
-                    "type": "string"
-                },
-                "username": {
                     "type": "string"
                 }
             }

@@ -26,21 +26,6 @@ definitions:
     - kategori_id
     - lokasi
     type: object
-  model.KategoriFasilitas:
-    properties:
-      id:
-        type: integer
-      nama_kategori:
-        type: string
-      petugas:
-        allOf:
-        - $ref: '#/definitions/model.User'
-        description: Relations
-      petugas_id:
-        type: integer
-      sla_jam:
-        type: integer
-    type: object
   model.KategoriRequest:
     properties:
       nama_kategori:
@@ -52,35 +37,6 @@ definitions:
     required:
     - nama_kategori
     type: object
-  model.Laporan:
-    properties:
-      deskripsi:
-        type: string
-      foto_url:
-        type: string
-      id:
-        type: integer
-      kategori:
-        $ref: '#/definitions/model.KategoriFasilitas'
-      kategori_id:
-        type: integer
-      lokasi:
-        type: string
-      pelapor:
-        allOf:
-        - $ref: '#/definitions/model.User'
-        description: Relations
-      pelapor_id:
-        type: integer
-      prioritas:
-        type: string
-      status:
-        type: string
-      tanggal_lapor:
-        type: string
-      tanggal_selesai:
-        type: string
-    type: object
   model.LoginRequest:
     properties:
       password:
@@ -90,13 +46,6 @@ definitions:
     required:
     - password
     - username
-    type: object
-  model.LoginResponse:
-    properties:
-      token:
-        type: string
-      user:
-        $ref: '#/definitions/model.User'
     type: object
   model.RegisterRequest:
     properties:
@@ -114,21 +63,12 @@ definitions:
     - password
     - username
     type: object
-  model.RiwayatStatus:
+  model.Response:
     properties:
-      id:
-        type: integer
-      keterangan:
+      data: {}
+      error:
         type: string
-      laporan:
-        allOf:
-        - $ref: '#/definitions/model.Laporan'
-        description: Relations
-      laporan_id:
-        type: integer
-      status:
-        type: string
-      waktu:
+      message:
         type: string
     type: object
   model.UpdateStatusRequest:
@@ -137,19 +77,6 @@ definitions:
         type: string
     required:
     - status
-    type: object
-  model.User:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: integer
-      nama:
-        type: string
-      role:
-        type: string
-      username:
-        type: string
     type: object
 host: localhost:3000
 info:
@@ -167,9 +94,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/model.KategoriFasilitas'
-            type: array
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Daftar kategori fasilitas
@@ -192,12 +117,11 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.KategoriFasilitas'
+            $ref: '#/definitions/model.Response'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Tambah kategori baru
@@ -218,13 +142,11 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
         "404":
           description: Not Found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Hapus kategori
@@ -252,17 +174,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.KategoriFasilitas'
+            $ref: '#/definitions/model.Response'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
         "404":
           description: Not Found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Ubah kategori
@@ -277,9 +197,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/model.Laporan'
-            type: array
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Daftar laporan
@@ -302,12 +220,11 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/model.Laporan'
+            $ref: '#/definitions/model.Response'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Buat laporan baru
@@ -328,13 +245,11 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
         "404":
           description: Not Found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Hapus laporan
@@ -354,12 +269,11 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Laporan'
+            $ref: '#/definitions/model.Response'
         "404":
           description: Not Found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Detail laporan
@@ -380,9 +294,7 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/model.RiwayatStatus'
-            type: array
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Riwayat status laporan
@@ -411,17 +323,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.Laporan'
+            $ref: '#/definitions/model.Response'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
         "404":
           description: Not Found
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Ubah status laporan
@@ -445,18 +355,15 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Ubah password
@@ -480,17 +387,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/model.LoginResponse'
+            $ref: '#/definitions/model.Response'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
         "401":
           description: Unauthorized
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       summary: Login user
       tags:
       - Auth
@@ -512,18 +417,15 @@ paths:
         "201":
           description: Created
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
         "400":
           description: Bad Request
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
         "409":
           description: Conflict
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/model.Response'
       summary: Register user baru
       tags:
       - Auth
