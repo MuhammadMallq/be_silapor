@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"be_silapor/model"
+	"be_silapor/pkg/storage"
 	"be_silapor/repository"
 
 	"github.com/gofiber/fiber/v2"
@@ -98,27 +99,46 @@ func GetLaporanByID(c *fiber.Ctx) error {
 func CreateLaporan(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 
-	var req model.CreateLaporanRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
-			Message: "payload tidak valid",
-			Error:   err.Error(),
-		})
-	}
+	kategoriIDStr := c.FormValue("kategori_id")
+	lokasi := c.FormValue("lokasi")
+	deskripsi := c.FormValue("deskripsi")
 
-	if req.KategoriID == 0 || req.Lokasi == "" || req.Deskripsi == "" {
+	if kategoriIDStr == "" || lokasi == "" || deskripsi == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
 			Message: "kategori, lokasi, dan deskripsi wajib diisi",
 		})
 	}
 
+	kategoriID, err := strconv.ParseUint(kategoriIDStr, 10, 32)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "kategori_id tidak valid",
+			Error:   err.Error(),
+		})
+	}
+
 	// Verify kategori exists
-	kategori, err := repository.FindKategoriByID(req.KategoriID)
+	kategori, err := repository.FindKategoriByID(uint(kategoriID))
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
 			Message: "kategori tidak ditemukan",
 			Error:   err.Error(),
 		})
+	}
+
+	// Handle file upload
+	var fotoURL string
+	file, err := c.FormFile("bukti")
+	if err == nil && file != nil { // File is optional
+		// Upload to Supabase
+		url, uploadErr := storage.UploadToSupabase(file)
+		if uploadErr != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
+				Message: "gagal mengunggah bukti gambar",
+				Error:   uploadErr.Error(),
+			})
+		}
+		fotoURL = url
 	}
 
 	// Determine initial status based on whether petugas is assigned
@@ -129,10 +149,10 @@ func CreateLaporan(c *fiber.Ctx) error {
 
 	laporan := model.Laporan{
 		PelaporID:  userID,
-		KategoriID: req.KategoriID,
-		Lokasi:     req.Lokasi,
-		Deskripsi:  req.Deskripsi,
-		FotoURL:    req.FotoURL,
+		KategoriID: uint(kategoriID),
+		Lokasi:     lokasi,
+		Deskripsi:  deskripsi,
+		FotoURL:    fotoURL,
 		Status:     initialStatus,
 		Prioritas:  "normal",
 	}
@@ -224,10 +244,27 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 
 	laporan.Status = req.Status
 
-	// If status is "selesai", set tanggal_selesai
+	// If status is "selesai", set tanggal_selesai and handle bukti_selesai upload
 	if req.Status == "selesai" {
 		now := time.Now()
 		laporan.TanggalSelesai = &now
+
+		file, err := c.FormFile("bukti_selesai")
+		if err != nil { 
+			return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+				Message: "bukti penyelesaian (foto/video) wajib diunggah",
+				Error:   err.Error(),
+			})
+		}
+
+		url, uploadErr := storage.UploadToSupabase(file)
+		if uploadErr != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
+				Message: "gagal mengunggah bukti selesai",
+				Error:   uploadErr.Error(),
+			})
+		}
+		laporan.BuktiSelesai = url
 	}
 
 	if err := repository.UpdateLaporan(laporan); err != nil {

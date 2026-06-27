@@ -64,9 +64,6 @@ func Register(c *fiber.Ctx) error {
 
 	// Set default role
 	role := "mahasiswa"
-	if req.Role == "petugas" || req.Role == "admin" {
-		role = req.Role
-	}
 
 	user := model.User{
 		Nama:     req.Nama,

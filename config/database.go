@@ -4,6 +4,8 @@ import (
 	"log"
 	"os"
 
+	"be_silapor/model"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -39,7 +41,18 @@ func ConnectDatabase() {
 
 	log.Println("Berhasil terhubung ke database Supabase")
 
-	// AutoMigrate dinonaktifkan karena skema tabel sudah dibuat langsung di Supabase
-	// Menggunakan AutoMigrate di sini bisa konflik dengan tabel yang sudah ada
-	log.Println("Koneksi database berhasil. (Auto-migrate dinonaktifkan)")
+	// Tambahkan kolom bukti_selesai secara manual jika belum ada, 
+	// agar tidak memicu error AutoMigrate pada relasi tabel users.
+	if !DB.Migrator().HasColumn(&model.Laporan{}, "BuktiSelesai") {
+		err = DB.Migrator().AddColumn(&model.Laporan{}, "BuktiSelesai")
+		if err != nil {
+			log.Println("Peringatan: Gagal menambahkan kolom bukti_selesai:", err)
+		} else {
+			log.Println("Berhasil menambahkan kolom bukti_selesai ke tabel laporan.")
+		}
+	} else {
+		log.Println("Kolom bukti_selesai sudah ada di tabel laporan.")
+	}
+
+	log.Println("Koneksi database berhasil.")
 }

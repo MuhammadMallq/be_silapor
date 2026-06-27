@@ -39,6 +39,7 @@ type Laporan struct {
 	Prioritas      string     `json:"prioritas" gorm:"not null;default:normal"`  // normal / tinggi (naik otomatis jika lewat SLA)
 	TanggalLapor   time.Time  `json:"tanggal_lapor" gorm:"autoCreateTime"` // Diisi otomatis saat laporan dibuat
 	TanggalSelesai *time.Time `json:"tanggal_selesai"` // Diisi saat status berubah menjadi "selesai"
+	BuktiSelesai   string     `json:"bukti_selesai"`   // Bukti foto setelah dikerjakan petugas
 
 	// Relasi: laporan dimiliki oleh satu pelapor dan satu kategori
 	Pelapor  *User              `json:"pelapor,omitempty" gorm:"foreignKey:PelaporID"`
@@ -113,7 +114,7 @@ type CreateLaporanRequest struct {
 
 // UpdateStatusRequest adalah body JSON untuk endpoint PUT /laporan/:id/status
 type UpdateStatusRequest struct {
-	Status string `json:"status" validate:"required"` // Nilai: dilaporkan/ditugaskan/dikerjakan/selesai
+	Status string `json:"status" form:"status" validate:"required"` // Nilai: dilaporkan/ditugaskan/dikerjakan/selesai
 }
 
 // KategoriRequest adalah body JSON untuk endpoint POST/PUT /kategori
