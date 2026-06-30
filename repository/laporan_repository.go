@@ -40,9 +40,9 @@ func FindLaporanByPelaporID(pelaporID uint) ([]model.Laporan, error) {
 // Dipakai untuk role "petugas" agar hanya melihat laporan yang menjadi tanggung jawabnya
 func FindLaporanByKategoriPetugasID(petugasID uint) ([]model.Laporan, error) {
 	var laporans []model.Laporan
-	err := config.DB.Preload("Pelapor").Preload("Kategori").
+	err := config.DB.Preload("Pelapor").Preload("Kategori").Preload("Petugas").
 		Joins("JOIN kategori_fasilitas ON kategori_fasilitas.id = laporan.kategori_id").
-		Where("kategori_fasilitas.petugas_id = ?", petugasID).
+		Where("laporan.petugas_id = ? OR (laporan.petugas_id IS NULL AND kategori_fasilitas.petugas_id = ?)", petugasID, petugasID).
 		Order("laporan.tanggal_lapor DESC").Find(&laporans).Error
 	return laporans, err
 }
@@ -52,7 +52,7 @@ func FindLaporanByKategoriPetugasID(petugasID uint) ([]model.Laporan, error) {
 // Mengembalikan error jika laporan tidak ditemukan (dipakai untuk validasi)
 func FindLaporanByID(id uint) (*model.Laporan, error) {
 	var laporan model.Laporan
-	err := config.DB.Preload("Pelapor").Preload("Kategori").Preload("Kategori.Petugas").
+	err := config.DB.Preload("Pelapor").Preload("Kategori").Preload("Kategori.Petugas").Preload("Petugas").
 		First(&laporan, id).Error
 	if err != nil {
 		return nil, err

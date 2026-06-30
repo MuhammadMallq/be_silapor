@@ -3,9 +3,7 @@ package main
 import (
 	"be_silapor/config"
 	_ "be_silapor/docs"
-	"be_silapor/pkg/scheduler"
 	"be_silapor/router"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/joho/godotenv"
@@ -35,8 +33,8 @@ func main() {
 	// Setup routes
 	router.SetupRoutes(app)
 
-	// Start SLA Escalation Scheduler
-	scheduler.StartEscalationScheduler()
+	// Start SLA Escalation Scheduler (Dinonaktifkan atas permintaan user - eskalasi hanya manual oleh Admin)
+	// scheduler.StartEscalationScheduler()
 
 	app.Listen(":3000")
 }

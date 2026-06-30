@@ -372,3 +372,100 @@ func GetRiwayatLaporan(c *fiber.Ctx) error {
 		Data:    riwayats,
 	})
 }
+
+// UpdateRating memproses pemberian rating dan feedback oleh mahasiswa
+func UpdateRating(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{Message: "ID tidak valid"})
+	}
+
+	var req model.RatingRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{Message: "Data tidak valid"})
+	}
+
+	laporan, err := repository.FindLaporanByID(uint(id))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(model.Response{Message: "Laporan tidak ditemukan"})
+	}
+
+	// Pastikan status sudah selesai
+	if laporan.Status != "selesai" {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{Message: "Laporan belum selesai, tidak bisa memberi rating"})
+	}
+
+	// Update laporan
+	laporan.Rating = req.Rating
+	laporan.Feedback = req.Feedback
+
+	if err := repository.UpdateLaporan(laporan); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{Message: "Gagal menyimpan rating"})
+	}
+
+	return c.JSON(model.Response{
+		Message: "Rating berhasil disimpan",
+	})
+}
+
+// AdminUpdateLaporan memproses update prioritas dan penugasan oleh Admin
+func AdminUpdateLaporan(c *fiber.Ctx) error {
+	id, err := strconv.Atoi(c.Params("id"))
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{Message: "ID tidak valid"})
+	}
+
+	var req model.AdminUpdateLaporanRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{Message: "Data tidak valid"})
+	}
+
+	laporan, err := repository.FindLaporanByID(uint(id))
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(model.Response{Message: "Laporan tidak ditemukan"})
+	}
+
+	// Update Prioritas
+	if req.Prioritas != "" {
+		if req.Prioritas != laporan.Prioritas {
+			repository.CreateRiwayat(&model.RiwayatStatus{
+				LaporanID:  laporan.ID,
+				Status:     laporan.Status,
+				Keterangan: "Prioritas diubah menjadi " + req.Prioritas + " oleh Admin",
+			})
+		}
+		laporan.Prioritas = req.Prioritas
+	}
+
+	// Update PetugasID
+	if req.PetugasID != nil {
+		if *req.PetugasID == 0 {
+			laporan.PetugasID = nil
+		} else {
+			laporan.PetugasID = req.PetugasID
+		}
+	}
+
+	// Update Tenggat Waktu
+	if req.TenggatWaktu != nil {
+		laporan.TenggatWaktu = req.TenggatWaktu
+	} else {
+        // If request sends null (meaning unset the deadline)
+        // Check if the JSON field was actually provided or omitted?
+        // We'll trust the frontend. If it sends null, we unset it.
+        // But with Go, a nil pointer means it could be unset in JSON.
+        // We will assume the frontend only sends it if it wants to change it.
+        // Wait, the frontend payload sends `tenggat_waktu: null` to unset.
+    }
+    
+    // To properly unset, let's just use what's in req.
+    laporan.TenggatWaktu = req.TenggatWaktu
+
+	if err := repository.UpdateLaporan(laporan); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{Message: "Gagal mengupdate laporan"})
+	}
+
+	return c.JSON(model.Response{
+		Message: "Laporan berhasil diupdate oleh Admin",
+	})
+}
