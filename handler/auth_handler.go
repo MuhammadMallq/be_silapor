@@ -22,7 +22,7 @@ import (
 // @Success 201 {object} model.Response
 // @Failure 400 {object} model.Response
 // @Failure 409 {object} model.Response
-// @Router /register [post]
+// @Router /api/register [post]
 func Register(c *fiber.Ctx) error {
 	var req model.RegisterRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -95,7 +95,7 @@ func Register(c *fiber.Ctx) error {
 // @Success 200 {object} model.Response
 // @Failure 400 {object} model.Response
 // @Failure 401 {object} model.Response
-// @Router /login [post]
+// @Router /api/login [post]
 func Login(c *fiber.Ctx) error {
 	var req model.LoginRequest
 	if err := c.BodyParser(&req); err != nil {
@@ -164,7 +164,7 @@ func Login(c *fiber.Ctx) error {
 // @Success 200 {object} model.Response
 // @Failure 400 {object} model.Response
 // @Failure 401 {object} model.Response
-// @Router /changepassword [put]
+// @Router /api/changepassword [put]
 func ChangePassword(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 

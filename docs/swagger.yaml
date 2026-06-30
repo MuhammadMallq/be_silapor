@@ -96,6 +96,38 @@ info:
   title: SiLapor API
   version: "1.0"
 paths:
+  /api/changepassword:
+    put:
+      consumes:
+      - application/json
+      description: Mengubah password user yang sedang login
+      parameters:
+      - description: Data password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Ubah password
+      tags:
+      - Auth
   /api/kategori:
     get:
       description: Mengambil semua kategori fasilitas
@@ -348,39 +380,7 @@ paths:
       summary: Ubah status laporan
       tags:
       - Laporan
-  /changepassword:
-    put:
-      consumes:
-      - application/json
-      description: Mengubah password user yang sedang login
-      parameters:
-      - description: Data password
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/model.ChangePasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/model.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/model.Response'
-      security:
-      - BearerAuth: []
-      summary: Ubah password
-      tags:
-      - Auth
-  /login:
+  /api/login:
     post:
       consumes:
       - application/json
@@ -410,7 +410,7 @@ paths:
       summary: Login user
       tags:
       - Auth
-  /register:
+  /api/register:
     post:
       consumes:
       - application/json
