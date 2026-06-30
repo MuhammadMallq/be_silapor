@@ -14,12 +14,16 @@ definitions:
   model.CreateLaporanRequest:
     properties:
       deskripsi:
+        description: 'Wajib: penjelasan kerusakan'
         type: string
       foto_url:
+        description: 'Opsional: link foto'
         type: string
       kategori_id:
+        description: 'Wajib: pilih kategori fasilitas'
         type: integer
       lokasi:
+        description: 'Wajib: lokasi kerusakan'
         type: string
     required:
     - deskripsi
@@ -29,10 +33,13 @@ definitions:
   model.KategoriRequest:
     properties:
       nama_kategori:
+        description: Nama kategori fasilitas
         type: string
       petugas_id:
+        description: ID petugas yang bertanggung jawab (opsional)
         type: integer
       sla_jam:
+        description: Batas waktu penanganan dalam jam
         type: integer
     required:
     - nama_kategori
@@ -55,6 +62,7 @@ definitions:
         minLength: 6
         type: string
       role:
+        description: 'Opsional: mahasiswa (default) / petugas / admin'
         type: string
       username:
         type: string
@@ -65,20 +73,23 @@ definitions:
     type: object
   model.Response:
     properties:
-      data: {}
+      data:
+        description: Data yang dikembalikan (bisa apapun)
       error:
+        description: Pesan error jika ada (tidak dikirim jika kosong)
         type: string
       message:
+        description: Pesan singkat hasil operasi
         type: string
     type: object
   model.UpdateStatusRequest:
     properties:
       status:
+        description: 'Nilai: dilaporkan/ditugaskan/dikerjakan/selesai'
         type: string
     required:
     - status
     type: object
-host: localhost:3000
 info:
   contact: {}
   description: API untuk Sistem Pengaduan & Tracking Fasilitas Kampus

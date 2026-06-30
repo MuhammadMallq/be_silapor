@@ -587,15 +587,19 @@ const docTemplate = `{
             ],
             "properties": {
                 "deskripsi": {
+                    "description": "Wajib: penjelasan kerusakan",
                     "type": "string"
                 },
                 "foto_url": {
+                    "description": "Opsional: link foto",
                     "type": "string"
                 },
                 "kategori_id": {
+                    "description": "Wajib: pilih kategori fasilitas",
                     "type": "integer"
                 },
                 "lokasi": {
+                    "description": "Wajib: lokasi kerusakan",
                     "type": "string"
                 }
             }
@@ -607,12 +611,15 @@ const docTemplate = `{
             ],
             "properties": {
                 "nama_kategori": {
+                    "description": "Nama kategori fasilitas",
                     "type": "string"
                 },
                 "petugas_id": {
+                    "description": "ID petugas yang bertanggung jawab (opsional)",
                     "type": "integer"
                 },
                 "sla_jam": {
+                    "description": "Batas waktu penanganan dalam jam",
                     "type": "integer"
                 }
             }
@@ -648,6 +655,7 @@ const docTemplate = `{
                     "minLength": 6
                 },
                 "role": {
+                    "description": "Opsional: mahasiswa (default) / petugas / admin",
                     "type": "string"
                 },
                 "username": {
@@ -658,11 +666,15 @@ const docTemplate = `{
         "model.Response": {
             "type": "object",
             "properties": {
-                "data": {},
+                "data": {
+                    "description": "Data yang dikembalikan (bisa apapun)"
+                },
                 "error": {
+                    "description": "Pesan error jika ada (tidak dikirim jika kosong)",
                     "type": "string"
                 },
                 "message": {
+                    "description": "Pesan singkat hasil operasi",
                     "type": "string"
                 }
             }
@@ -674,6 +686,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "status": {
+                    "description": "Nilai: dilaporkan/ditugaskan/dikerjakan/selesai",
                     "type": "string"
                 }
             }
@@ -691,7 +704,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:3000",
+	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "SiLapor API",
