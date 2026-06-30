@@ -15,6 +15,57 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/changepassword": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengubah password user yang sedang login",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Ubah password",
+                "parameters": [
+                    {
+                        "description": "Data password",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ChangePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/kategori": {
             "get": {
                 "security": [
@@ -211,7 +262,7 @@ const docTemplate = `{
                 ],
                 "description": "Mahasiswa membuat laporan kerusakan baru",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -222,13 +273,31 @@ const docTemplate = `{
                 "summary": "Buat laporan baru",
                 "parameters": [
                     {
-                        "description": "Data laporan",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.CreateLaporanRequest"
-                        }
+                        "type": "string",
+                        "description": "Penjelasan kerusakan",
+                        "name": "deskripsi",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Lokasi kerusakan",
+                        "name": "lokasi",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Kategori ID",
+                        "name": "kategori_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Foto bukti kerusakan (opsional)",
+                        "name": "bukti",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -368,7 +437,7 @@ const docTemplate = `{
                 ],
                 "description": "Petugas mengubah status laporan",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -386,13 +455,17 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Status baru",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.UpdateStatusRequest"
-                        }
+                        "type": "string",
+                        "description": "Status baru (dilaporkan/ditugaskan/dikerjakan/selesai)",
+                        "name": "status",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Bukti penyelesaian (wajib jika status selesai)",
+                        "name": "bukti_selesai",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -417,58 +490,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/changepassword": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Mengubah password user yang sedang login",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Auth"
-                ],
-                "summary": "Ubah password",
-                "parameters": [
-                    {
-                        "description": "Data password",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.ChangePasswordRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/model.Response"
-                        }
-                    }
-                }
-            }
-        },
-        "/login": {
+        "/api/login": {
             "post": {
                 "description": "Login dan mendapatkan JWT token",
                 "consumes": [
@@ -514,7 +536,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/register": {
+        "/api/register": {
             "post": {
                 "description": "Mendaftarkan user baru ke sistem",
                 "consumes": [
@@ -578,28 +600,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.CreateLaporanRequest": {
-            "type": "object",
-            "required": [
-                "deskripsi",
-                "kategori_id",
-                "lokasi"
-            ],
-            "properties": {
-                "deskripsi": {
-                    "type": "string"
-                },
-                "foto_url": {
-                    "type": "string"
-                },
-                "kategori_id": {
-                    "type": "integer"
-                },
-                "lokasi": {
-                    "type": "string"
-                }
-            }
-        },
         "model.KategoriRequest": {
             "type": "object",
             "required": [
@@ -607,12 +607,15 @@ const docTemplate = `{
             ],
             "properties": {
                 "nama_kategori": {
+                    "description": "Nama kategori fasilitas",
                     "type": "string"
                 },
                 "petugas_id": {
+                    "description": "ID petugas yang bertanggung jawab (opsional)",
                     "type": "integer"
                 },
                 "sla_jam": {
+                    "description": "Batas waktu penanganan dalam jam",
                     "type": "integer"
                 }
             }
@@ -648,6 +651,7 @@ const docTemplate = `{
                     "minLength": 6
                 },
                 "role": {
+                    "description": "Opsional: mahasiswa (default) / petugas / admin",
                     "type": "string"
                 },
                 "username": {
@@ -658,22 +662,15 @@ const docTemplate = `{
         "model.Response": {
             "type": "object",
             "properties": {
-                "data": {},
+                "data": {
+                    "description": "Data yang dikembalikan (bisa apapun)"
+                },
                 "error": {
+                    "description": "Pesan error jika ada (tidak dikirim jika kosong)",
                     "type": "string"
                 },
                 "message": {
-                    "type": "string"
-                }
-            }
-        },
-        "model.UpdateStatusRequest": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
-                "status": {
+                    "description": "Pesan singkat hasil operasi",
                     "type": "string"
                 }
             }
@@ -691,7 +688,7 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:3000",
+	Host:             "",
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "SiLapor API",

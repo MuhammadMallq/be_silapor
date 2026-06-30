@@ -11,28 +11,16 @@ definitions:
     - new_password
     - old_password
     type: object
-  model.CreateLaporanRequest:
-    properties:
-      deskripsi:
-        type: string
-      foto_url:
-        type: string
-      kategori_id:
-        type: integer
-      lokasi:
-        type: string
-    required:
-    - deskripsi
-    - kategori_id
-    - lokasi
-    type: object
   model.KategoriRequest:
     properties:
       nama_kategori:
+        description: Nama kategori fasilitas
         type: string
       petugas_id:
+        description: ID petugas yang bertanggung jawab (opsional)
         type: integer
       sla_jam:
+        description: Batas waktu penanganan dalam jam
         type: integer
     required:
     - nama_kategori
@@ -55,6 +43,7 @@ definitions:
         minLength: 6
         type: string
       role:
+        description: 'Opsional: mahasiswa (default) / petugas / admin'
         type: string
       username:
         type: string
@@ -65,26 +54,53 @@ definitions:
     type: object
   model.Response:
     properties:
-      data: {}
+      data:
+        description: Data yang dikembalikan (bisa apapun)
       error:
+        description: Pesan error jika ada (tidak dikirim jika kosong)
         type: string
       message:
+        description: Pesan singkat hasil operasi
         type: string
     type: object
-  model.UpdateStatusRequest:
-    properties:
-      status:
-        type: string
-    required:
-    - status
-    type: object
-host: localhost:3000
 info:
   contact: {}
   description: API untuk Sistem Pengaduan & Tracking Fasilitas Kampus
   title: SiLapor API
   version: "1.0"
 paths:
+  /api/changepassword:
+    put:
+      consumes:
+      - application/json
+      description: Mengubah password user yang sedang login
+      parameters:
+      - description: Data password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Ubah password
+      tags:
+      - Auth
   /api/kategori:
     get:
       description: Mengambil semua kategori fasilitas
@@ -205,15 +221,28 @@ paths:
       - Laporan
     post:
       consumes:
-      - application/json
+      - multipart/form-data
       description: Mahasiswa membuat laporan kerusakan baru
       parameters:
-      - description: Data laporan
-        in: body
-        name: body
+      - description: Penjelasan kerusakan
+        in: formData
+        name: deskripsi
         required: true
-        schema:
-          $ref: '#/definitions/model.CreateLaporanRequest'
+        type: string
+      - description: Lokasi kerusakan
+        in: formData
+        name: lokasi
+        required: true
+        type: string
+      - description: Kategori ID
+        in: formData
+        name: kategori_id
+        required: true
+        type: integer
+      - description: Foto bukti kerusakan (opsional)
+        in: formData
+        name: bukti
+        type: file
       produces:
       - application/json
       responses:
@@ -303,7 +332,7 @@ paths:
   /api/laporan/{id}/status:
     put:
       consumes:
-      - application/json
+      - multipart/form-data
       description: Petugas mengubah status laporan
       parameters:
       - description: Laporan ID
@@ -311,12 +340,15 @@ paths:
         name: id
         required: true
         type: integer
-      - description: Status baru
-        in: body
-        name: body
+      - description: Status baru (dilaporkan/ditugaskan/dikerjakan/selesai)
+        in: formData
+        name: status
         required: true
-        schema:
-          $ref: '#/definitions/model.UpdateStatusRequest'
+        type: string
+      - description: Bukti penyelesaian (wajib jika status selesai)
+        in: formData
+        name: bukti_selesai
+        type: file
       produces:
       - application/json
       responses:
@@ -337,39 +369,7 @@ paths:
       summary: Ubah status laporan
       tags:
       - Laporan
-  /changepassword:
-    put:
-      consumes:
-      - application/json
-      description: Mengubah password user yang sedang login
-      parameters:
-      - description: Data password
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/model.ChangePasswordRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.Response'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/model.Response'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/model.Response'
-      security:
-      - BearerAuth: []
-      summary: Ubah password
-      tags:
-      - Auth
-  /login:
+  /api/login:
     post:
       consumes:
       - application/json
@@ -399,7 +399,7 @@ paths:
       summary: Login user
       tags:
       - Auth
-  /register:
+  /api/register:
     post:
       consumes:
       - application/json

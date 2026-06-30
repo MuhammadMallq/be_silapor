@@ -89,9 +89,12 @@ func GetLaporanByID(c *fiber.Ctx) error {
 // @Summary Buat laporan baru
 // @Description Mahasiswa membuat laporan kerusakan baru
 // @Tags Laporan
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
-// @Param body body model.CreateLaporanRequest true "Data laporan"
+// @Param deskripsi formData string true "Penjelasan kerusakan"
+// @Param lokasi formData string true "Lokasi kerusakan"
+// @Param kategori_id formData int true "Kategori ID"
+// @Param bukti formData file false "Foto bukti kerusakan (opsional)"
 // @Security BearerAuth
 // @Success 201 {object} model.Response
 // @Failure 400 {object} model.Response
@@ -195,10 +198,11 @@ func CreateLaporan(c *fiber.Ctx) error {
 // @Summary Ubah status laporan
 // @Description Petugas mengubah status laporan
 // @Tags Laporan
-// @Accept json
+// @Accept multipart/form-data
 // @Produce json
 // @Param id path int true "Laporan ID"
-// @Param body body model.UpdateStatusRequest true "Status baru"
+// @Param status formData string true "Status baru (dilaporkan/ditugaskan/dikerjakan/selesai)"
+// @Param bukti_selesai formData file false "Bukti penyelesaian (wajib jika status selesai)"
 // @Security BearerAuth
 // @Success 200 {object} model.Response
 // @Failure 400 {object} model.Response
