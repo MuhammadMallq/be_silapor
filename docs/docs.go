@@ -262,7 +262,7 @@ const docTemplate = `{
                 ],
                 "description": "Mahasiswa membuat laporan kerusakan baru",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -273,13 +273,31 @@ const docTemplate = `{
                 "summary": "Buat laporan baru",
                 "parameters": [
                     {
-                        "description": "Data laporan",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.CreateLaporanRequest"
-                        }
+                        "type": "string",
+                        "description": "Penjelasan kerusakan",
+                        "name": "deskripsi",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Lokasi kerusakan",
+                        "name": "lokasi",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Kategori ID",
+                        "name": "kategori_id",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Foto bukti kerusakan (opsional)",
+                        "name": "bukti",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -419,7 +437,7 @@ const docTemplate = `{
                 ],
                 "description": "Petugas mengubah status laporan",
                 "consumes": [
-                    "application/json"
+                    "multipart/form-data"
                 ],
                 "produces": [
                     "application/json"
@@ -437,13 +455,17 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Status baru",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/model.UpdateStatusRequest"
-                        }
+                        "type": "string",
+                        "description": "Status baru (dilaporkan/ditugaskan/dikerjakan/selesai)",
+                        "name": "status",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Bukti penyelesaian (wajib jika status selesai)",
+                        "name": "bukti_selesai",
+                        "in": "formData"
                     }
                 ],
                 "responses": {
@@ -578,32 +600,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.CreateLaporanRequest": {
-            "type": "object",
-            "required": [
-                "deskripsi",
-                "kategori_id",
-                "lokasi"
-            ],
-            "properties": {
-                "deskripsi": {
-                    "description": "Wajib: penjelasan kerusakan",
-                    "type": "string"
-                },
-                "foto_url": {
-                    "description": "Opsional: link foto",
-                    "type": "string"
-                },
-                "kategori_id": {
-                    "description": "Wajib: pilih kategori fasilitas",
-                    "type": "integer"
-                },
-                "lokasi": {
-                    "description": "Wajib: lokasi kerusakan",
-                    "type": "string"
-                }
-            }
-        },
         "model.KategoriRequest": {
             "type": "object",
             "required": [
@@ -675,18 +671,6 @@ const docTemplate = `{
                 },
                 "message": {
                     "description": "Pesan singkat hasil operasi",
-                    "type": "string"
-                }
-            }
-        },
-        "model.UpdateStatusRequest": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
-                "status": {
-                    "description": "Nilai: dilaporkan/ditugaskan/dikerjakan/selesai",
                     "type": "string"
                 }
             }
