@@ -79,6 +79,26 @@ func GetLaporanByID(c *fiber.Ctx) error {
 		})
 	}
 
+	// Authorization check
+	userID := c.Locals("user_id").(uint)
+	role := c.Locals("role").(string)
+
+	if role == "mahasiswa" && laporan.PelaporID != userID {
+		return c.Status(fiber.StatusForbidden).JSON(model.Response{
+			Message: "Akses ditolak: Anda tidak memiliki akses ke laporan ini",
+		})
+	}
+
+	if role == "petugas" {
+		isAssigned := (laporan.PetugasID != nil && *laporan.PetugasID == userID) || 
+			(laporan.PetugasID == nil && laporan.Kategori.PetugasID != nil && *laporan.Kategori.PetugasID == userID)
+		if !isAssigned {
+			return c.Status(fiber.StatusForbidden).JSON(model.Response{
+				Message: "Akses ditolak: Laporan ini tidak ditugaskan kepada Anda",
+			})
+		}
+	}
+
 	return c.JSON(model.Response{
 		Message: "berhasil mengambil detail laporan",
 		Data:    laporan,
@@ -246,6 +266,20 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 		})
 	}
 
+	// Authorization check
+	userID := c.Locals("user_id").(uint)
+	role := c.Locals("role").(string)
+	
+	if role == "petugas" {
+		isAssigned := (laporan.PetugasID != nil && *laporan.PetugasID == userID) || 
+			(laporan.PetugasID == nil && laporan.Kategori.PetugasID != nil && *laporan.Kategori.PetugasID == userID)
+		if !isAssigned {
+			return c.Status(fiber.StatusForbidden).JSON(model.Response{
+				Message: "Akses ditolak: Anda tidak memiliki wewenang mengubah status laporan ini",
+			})
+		}
+	}
+
 	laporan.Status = req.Status
 
 	// If status is "selesai", set tanggal_selesai and handle bukti_selesai upload
@@ -392,6 +426,12 @@ func UpdateRating(c *fiber.Ctx) error {
 	laporan, err := repository.FindLaporanByID(uint(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(model.Response{Message: "Laporan tidak ditemukan"})
+	}
+
+	// Authorization check
+	userID := c.Locals("user_id").(uint)
+	if laporan.PelaporID != userID {
+		return c.Status(fiber.StatusForbidden).JSON(model.Response{Message: "Akses ditolak: Anda hanya dapat memberi rating pada laporan Anda sendiri"})
 	}
 
 	// Pastikan status sudah selesai
