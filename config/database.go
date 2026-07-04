@@ -67,5 +67,21 @@ func ConnectDatabase() {
         }
     }
 
+	// Migrasi untuk tabel baru Notifikasi secara manual karena AutoMigrate GORM bentrok dengan relasi users
+	err = DB.Exec(`
+		CREATE TABLE IF NOT EXISTS notifikasi (
+			id SERIAL PRIMARY KEY,
+			user_id BIGINT NOT NULL,
+			laporan_id BIGINT,
+			pesan TEXT NOT NULL,
+			is_read BOOLEAN DEFAULT FALSE,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+		)
+	`).Error
+	
+	if err != nil {
+		log.Println("Peringatan: Gagal membuat tabel notifikasi:", err)
+	}
+
 	log.Println("Koneksi database berhasil.")
 }

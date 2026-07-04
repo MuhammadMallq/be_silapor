@@ -4,6 +4,7 @@ import (
 	"strconv"
 	"time"
 
+	"be_silapor/config"
 	"be_silapor/model"
 	"be_silapor/pkg/storage"
 	"be_silapor/repository"
@@ -282,6 +283,13 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 
 	laporan.Status = req.Status
 
+	// Buat notifikasi ke mahasiswa (Pelapor)
+	repository.CreateNotifikasi(&model.Notifikasi{
+		UserID:    laporan.PelaporID,
+		LaporanID: &laporan.ID,
+		Pesan:     "Status laporan Anda tentang " + laporan.Deskripsi + " diubah menjadi: " + req.Status,
+	})
+
 	// If status is "selesai", set tanggal_selesai and handle bukti_selesai upload
 	if req.Status == "selesai" {
 		now := time.Now()
@@ -478,34 +486,55 @@ func AdminUpdateLaporan(c *fiber.Ctx) error {
 				Keterangan: "Prioritas diubah menjadi " + req.Prioritas + " oleh Admin",
 			})
 		}
-		laporan.Prioritas = req.Prioritas
+	}
+
+	// Siapkan map kolom yang akan diupdate secara eksplisit
+	// Menggunakan map agar GORM tidak menimpa field lain via asosiasi
+	updates := map[string]interface{}{}
+
+	if req.Prioritas != "" {
+		updates["prioritas"] = req.Prioritas
 	}
 
 	// Update PetugasID
 	if req.PetugasID != nil {
 		if *req.PetugasID == 0 {
-			laporan.PetugasID = nil
+			// Kosongkan petugas (set NULL)
+			updates["petugas_id"] = nil
+			// Kembalikan status ke dilaporkan jika petugas dikosongkan
+			updates["status"] = "dilaporkan"
 		} else {
-			laporan.PetugasID = req.PetugasID
+			updates["petugas_id"] = *req.PetugasID
+			// Otomatis ubah status menjadi "ditugaskan" saat ada petugas
+			if laporan.Status == "dilaporkan" {
+				updates["status"] = "ditugaskan"
+				repository.CreateRiwayat(&model.RiwayatStatus{
+					LaporanID:  laporan.ID,
+					Status:     "ditugaskan",
+					Keterangan: "Laporan ditugaskan ke petugas oleh Admin",
+				})
+			}
+			// Buat notifikasi ke petugas baru (hanya jika petugas berubah)
+			if laporan.PetugasID == nil || *laporan.PetugasID != *req.PetugasID {
+				repository.CreateNotifikasi(&model.Notifikasi{
+					UserID:    *req.PetugasID,
+					LaporanID: &laporan.ID,
+					Pesan:     "Anda ditugaskan pada laporan: " + laporan.Deskripsi,
+				})
+			}
 		}
 	}
 
 	// Update Tenggat Waktu
-	if req.TenggatWaktu != nil {
-		laporan.TenggatWaktu = req.TenggatWaktu
-	} else {
-        // If request sends null (meaning unset the deadline)
-        // Check if the JSON field was actually provided or omitted?
-        // We'll trust the frontend. If it sends null, we unset it.
-        // But with Go, a nil pointer means it could be unset in JSON.
-        // We will assume the frontend only sends it if it wants to change it.
-        // Wait, the frontend payload sends `tenggat_waktu: null` to unset.
-    }
-    
-    // To properly unset, let's just use what's in req.
-    laporan.TenggatWaktu = req.TenggatWaktu
+	updates["tenggat_waktu"] = req.TenggatWaktu // nil = hapus tenggat
 
-	if err := repository.UpdateLaporan(laporan); err != nil {
+	if len(updates) == 0 {
+		return c.JSON(model.Response{Message: "Tidak ada perubahan yang dilakukan"})
+	}
+
+	// Gunakan Updates dengan map agar hanya kolom yang dituju yang diupdate
+	// Ini menghindari bug GORM Save() yang bisa menimpa relasi
+	if err := config.DB.Model(&model.Laporan{}).Where("id = ?", laporan.ID).Updates(updates).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{Message: "Gagal mengupdate laporan"})
 	}
 

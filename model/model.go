@@ -68,12 +68,27 @@ type RiwayatStatus struct {
 	Laporan *Laporan `json:"laporan,omitempty" gorm:"foreignKey:LaporanID"`
 }
 
+// Notifikasi merepresentasikan tabel "notifikasi"
+// Menyimpan pesan notifikasi in-app untuk pengguna
+type Notifikasi struct {
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	UserID    uint      `json:"user_id" gorm:"not null"` // Penerima notifikasi
+	LaporanID *uint     `json:"laporan_id"`              // Opsional, referensi ke laporan
+	Pesan     string    `json:"pesan" gorm:"not null"`   // Isi pesan
+	IsRead    bool      `json:"is_read" gorm:"default:false"`
+	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
+
+	User    *User    `json:"user,omitempty" gorm:"foreignKey:UserID"`
+	Laporan *Laporan `json:"laporan,omitempty" gorm:"foreignKey:LaporanID"`
+}
+
 // TableName memberi tahu GORM nama tabel yang digunakan di database
 // Tanpa ini, GORM akan pakai nama default (users → "users", dst — sudah sama)
 func (User) TableName() string              { return "users" }
 func (KategoriFasilitas) TableName() string { return "kategori_fasilitas" }
 func (Laporan) TableName() string           { return "laporan" }
 func (RiwayatStatus) TableName() string     { return "riwayat_status" }
+func (Notifikasi) TableName() string        { return "notifikasi" }
 
 // ---- Struct untuk Request & Response API ----
 // Struct-struct ini BUKAN tabel database, hanya dipakai untuk membaca/mengirim data JSON

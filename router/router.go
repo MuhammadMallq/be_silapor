@@ -76,4 +76,10 @@ func SetupRoutes(app *fiber.App) {
 	userAdmin.Get("/", handler.GetAllUsers)
 	userAdmin.Post("/", handler.CreateUserByAdmin)
 	userAdmin.Delete("/:id", handler.DeleteUser)
+
+	// ── Notifikasi Routes ─────────────────────────────────────────────────────
+	notifikasiRoute := api.Group("/notifikasi", middleware.JWTProtected())
+	notifikasiRoute.Get("/", handler.GetNotifikasi)
+	notifikasiRoute.Put("/read-all", handler.ReadAllNotifikasi)
+	notifikasiRoute.Put("/:id/read", handler.ReadNotifikasi)
 }
