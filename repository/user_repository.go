@@ -43,7 +43,7 @@ func UpdateUser(user *model.User) error {
 // Bisa dipakai untuk fitur manajemen user oleh admin
 func FindAllUsers() ([]model.User, error) {
 	var users []model.User
-	err := config.DB.Find(&users).Error
+	err := config.DB.Preload("KategoriFasilitas").Find(&users).Error
 	return users, err
 }
 

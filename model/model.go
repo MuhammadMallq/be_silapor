@@ -11,6 +11,9 @@ type User struct {
 	Password  string    `json:"-" gorm:"not null"`                    // json:"-" berarti password TIDAK dikirim ke response
 	Role      string    `json:"role" gorm:"not null;default:mahasiswa"` // nilai: mahasiswa / petugas / admin
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`     // Diisi otomatis saat data dibuat
+
+	// Relasi: User (Petugas) bisa memegang beberapa kategori (opsional, untuk preload di GetAllUsers)
+	KategoriFasilitas []KategoriFasilitas `json:"kategori_fasilitas,omitempty" gorm:"foreignKey:PetugasID"`
 }
 
 // KategoriFasilitas merepresentasikan tabel "kategori_fasilitas"
