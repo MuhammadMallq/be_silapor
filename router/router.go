@@ -59,6 +59,12 @@ func SetupRoutes(app *fiber.App) {
 	// PUT /api/laporan/:id/status → hanya admin dan petugas yang bisa ubah status laporan
 	api.Put("/laporan/:id/status", middleware.JWTProtected("admin", "petugas"), handler.UpdateStatusLaporan)
 
+	// PUT /api/laporan/:id/rating → hanya mahasiswa yang bisa memberi rating
+	api.Put("/laporan/:id/rating", middleware.JWTProtected("mahasiswa"), handler.UpdateRating)
+
+	// PUT /api/laporan/:id/admin-update → hanya admin yang bisa ubah prioritas dan petugas
+	api.Put("/laporan/:id/admin-update", middleware.JWTProtected("admin"), handler.AdminUpdateLaporan)
+
 	// DELETE /api/laporan/:id → hanya admin yang bisa menghapus laporan
 	api.Delete("/laporan/:id", middleware.JWTProtected("admin"), handler.DeleteLaporan)
 

@@ -3,6 +3,7 @@ package handler
 import (
 	"be_silapor/config"
 	"be_silapor/model"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -17,8 +18,10 @@ type DashboardResponse struct {
 	TotalLaporan    int64               `json:"total_laporan"`
 	BelumSelesai    int64               `json:"belum_selesai"`
 	Dieskalasi      int64               `json:"dieskalasi"`
+	Terlambat       int64               `json:"terlambat"`
 	TotalPengguna   int64               `json:"total_pengguna"`
 	PriorityReports []model.Laporan     `json:"priority_reports"`
+	LateReports     []model.Laporan     `json:"late_reports"`
 	CategoryStats   []CategoryStat      `json:"category_stats"`
 }
 
@@ -31,18 +34,47 @@ func GetAdminDashboard(c *fiber.Ctx) error {
 	// Belum Selesai
 	config.DB.Model(&model.Laporan{}).Where("status != ?", "selesai").Count(&resp.BelumSelesai)
 
-	// Dieskalasi (Prioritas Tinggi)
-	config.DB.Model(&model.Laporan{}).Where("prioritas = ?", "tinggi").Count(&resp.Dieskalasi)
+	// Dieskalasi (Prioritas Tinggi) - hanya yang belum selesai
+	config.DB.Model(&model.Laporan{}).Where("prioritas = ?", "tinggi").Where("status != ?", "selesai").Count(&resp.Dieskalasi)
 
 	// Total Pengguna
 	config.DB.Model(&model.User{}).Count(&resp.TotalPengguna)
 
-	// Priority Reports (Preload Kategori & Pelapor)
+	// Priority Reports (Preload Kategori & Pelapor) - hanya yang belum selesai
 	config.DB.Preload("Kategori").Preload("Pelapor").
 		Where("prioritas = ?", "tinggi").
+		Where("status != ?", "selesai").
 		Order("tanggal_lapor desc").
 		Limit(5).
 		Find(&resp.PriorityReports)
+
+	// Filter Laporan Terlambat (Belum Selesai & Lewat SLA / Tenggat Waktu)
+	var activeLaporans []model.Laporan
+	config.DB.Preload("Kategori").Preload("Pelapor").
+		Where("status != ?", "selesai").
+		Order("tanggal_lapor asc"). // yang paling lama dibuat / paling lama telat
+		Find(&activeLaporans)
+
+	now := time.Now()
+	for _, lap := range activeLaporans {
+		var deadline time.Time
+		if lap.TenggatWaktu != nil {
+			deadline = *lap.TenggatWaktu
+		} else {
+			slaHours := lap.Kategori.SLAJam
+			if slaHours == 0 {
+				slaHours = 48
+			}
+			deadline = lap.TanggalLapor.Add(time.Duration(slaHours) * time.Hour)
+		}
+
+		if now.After(deadline) {
+			resp.Terlambat++
+			if len(resp.LateReports) < 5 {
+				resp.LateReports = append(resp.LateReports, lap)
+			}
+		}
+	}
 
 	// Category Stats
 	var kats []model.KategoriFasilitas

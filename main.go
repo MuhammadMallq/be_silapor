@@ -3,8 +3,8 @@ package main
 import (
 	"be_silapor/config"
 	_ "be_silapor/docs"
-	"be_silapor/pkg/scheduler"
 	"be_silapor/router"
+	"os"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -14,13 +14,12 @@ import (
 // @title SiLapor API
 // @version 1.0
 // @description API untuk Sistem Pengaduan & Tracking Fasilitas Kampus
-// @host localhost:3000
 // @BasePath /
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
 func main() {
-	// Load env variables
+	// Load env variables (Ignore error jika file .env tidak ada, misalnya saat di Railway)
 	godotenv.Load()
 
 	app := fiber.New()
@@ -35,8 +34,14 @@ func main() {
 	// Setup routes
 	router.SetupRoutes(app)
 
-	// Start SLA Escalation Scheduler
-	scheduler.StartEscalationScheduler()
+	// Start SLA Escalation Scheduler (Dinonaktifkan atas permintaan user - eskalasi hanya manual oleh Admin)
+	// scheduler.StartEscalationScheduler()
 
-	app.Listen(":3000")
+	// Gunakan PORT dari environment variable, default ke 3000 jika tidak ada
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3000"
+	}
+
+	app.Listen(":" + port)
 }

@@ -54,5 +54,18 @@ func ConnectDatabase() {
 		log.Println("Kolom bukti_selesai sudah ada di tabel laporan.")
 	}
 
+    // Migrasi manual untuk kolom PetugasID, TenggatWaktu, Rating, Feedback
+    columnsToAdd := []string{"PetugasID", "TenggatWaktu", "Rating", "Feedback"}
+    for _, col := range columnsToAdd {
+        if !DB.Migrator().HasColumn(&model.Laporan{}, col) {
+            err = DB.Migrator().AddColumn(&model.Laporan{}, col)
+            if err != nil {
+                log.Println("Peringatan: Gagal menambahkan kolom", col, ":", err)
+            } else {
+                log.Println("Berhasil menambahkan kolom", col, "ke tabel laporan.")
+            }
+        }
+    }
+
 	log.Println("Koneksi database berhasil.")
 }

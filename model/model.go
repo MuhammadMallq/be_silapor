@@ -44,9 +44,15 @@ type Laporan struct {
 	TanggalSelesai *time.Time `json:"tanggal_selesai"` // Diisi saat status berubah menjadi "selesai"
 	BuktiSelesai   string     `json:"bukti_selesai"`   // Bukti foto setelah dikerjakan petugas
 
+	PetugasID    *uint      `json:"petugas_id"`   // ID Petugas spesifik yang ditugaskan admin
+	TenggatWaktu *time.Time `json:"tenggat_waktu"` // Tenggat waktu spesifik dari admin
+	Rating       int        `json:"rating" gorm:"default:0"`
+	Feedback     string     `json:"feedback"`
+
 	// Relasi: laporan dimiliki oleh satu pelapor dan satu kategori
 	Pelapor  *User              `json:"pelapor,omitempty" gorm:"foreignKey:PelaporID"`
 	Kategori *KategoriFasilitas `json:"kategori,omitempty" gorm:"foreignKey:KategoriID"`
+	Petugas  *User              `json:"petugas,omitempty" gorm:"foreignKey:PetugasID"`
 }
 
 // RiwayatStatus merepresentasikan tabel "riwayat_status"
@@ -125,4 +131,17 @@ type KategoriRequest struct {
 	NamaKategori string `json:"nama_kategori" validate:"required"` // Nama kategori fasilitas
 	PetugasID    *uint  `json:"petugas_id"`                        // ID petugas yang bertanggung jawab (opsional)
 	SLAJam       int    `json:"sla_jam"`                           // Batas waktu penanganan dalam jam
+}
+
+// RatingRequest adalah body JSON untuk endpoint PUT /laporan/:id/rating
+type RatingRequest struct {
+	Rating   int    `json:"rating" validate:"required,min=1,max=5"`
+	Feedback string `json:"feedback"`
+}
+
+// AdminUpdateLaporanRequest adalah body JSON untuk endpoint PUT /laporan/:id/admin-update
+type AdminUpdateLaporanRequest struct {
+	Prioritas    string     `json:"prioritas" validate:"required"`
+	PetugasID    *uint      `json:"petugas_id"`
+	TenggatWaktu *time.Time `json:"tenggat_waktu"`
 }
