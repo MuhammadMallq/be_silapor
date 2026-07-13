@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"be_silapor/config"
 	"be_silapor/model"
 	"be_silapor/repository"
 	"strconv"
@@ -102,7 +103,7 @@ func UpdateKategori(c *fiber.Ctx) error {
 		})
 	}
 
-	kategori, err := repository.FindKategoriByID(uint(id))
+	_, err = repository.FindKategoriByID(uint(id))
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(model.Response{
 			Message: "kategori tidak ditemukan",
@@ -118,26 +119,32 @@ func UpdateKategori(c *fiber.Ctx) error {
 		})
 	}
 
+	updates := map[string]interface{}{}
 	if req.NamaKategori != "" {
-		kategori.NamaKategori = req.NamaKategori
+		updates["nama_kategori"] = req.NamaKategori
 	}
-	if req.PetugasID != nil {
-		kategori.PetugasID = req.PetugasID
-	}
+	
+	// Update PetugasID (termasuk mengizinkan nil jika dikirim dari frontend)
+	updates["petugas_id"] = req.PetugasID
+
 	if req.SLAJam > 0 {
-		kategori.SLAJam = req.SLAJam
+		updates["sla_jam"] = req.SLAJam
 	}
 
-	if err := repository.UpdateKategori(kategori); err != nil {
+	// Gunakan Updates dengan map agar relasi "Petugas" (Preload) tidak menimpa PetugasID
+	if err := config.DB.Model(&model.KategoriFasilitas{}).Where("id = ?", id).Updates(updates).Error; err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
 			Message: "gagal mengubah kategori",
 			Error:   err.Error(),
 		})
 	}
 
+	// Reload agar merespon dengan data terbaru
+	kategoriUpdated, _ := repository.FindKategoriByID(uint(id))
+
 	return c.JSON(model.Response{
 		Message: "kategori berhasil diubah",
-		Data:    kategori,
+		Data:    kategoriUpdated,
 	})
 }
 
