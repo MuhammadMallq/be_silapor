@@ -11,9 +11,14 @@ import (
 // SetupRoutes mendaftarkan semua endpoint/route API ke aplikasi Fiber
 // Dipanggil sekali dari main.go setelah koneksi database berhasil
 func SetupRoutes(app *fiber.App) {
+	// Health-check: buka http://localhost:3000 → {"message": "API silapor siap"}
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{"message": "API silapor siap"})
+	})
+
 	// Endpoint Swagger UI: dokumentasi API yang bisa diakses lewat browser
-	// Buka: http://localhost:3000/swagger/index.html
-	app.Get("/swagger/*", swagger.HandlerDefault)
+	// Buka: http://localhost:3000/docs/index.html
+	app.Get("/docs/*", swagger.HandlerDefault)
 
 	// Semua route API dikelompokkan di bawah prefix /api
 	// Contoh: /api/login, /api/laporan, dst.
