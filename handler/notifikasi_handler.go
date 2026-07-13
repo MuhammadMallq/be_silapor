@@ -9,7 +9,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-// GetNotifikasi mengambil notifikasi untuk pengguna yang sedang login
+// GetNotifikasi godoc
+// @Summary Daftar Notifikasi
+// @Description Mengambil daftar notifikasi untuk pengguna yang sedang login
+// @Tags Notifikasi
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Router /api/notifikasi [get]
 func GetNotifikasi(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 
@@ -27,7 +34,15 @@ func GetNotifikasi(c *fiber.Ctx) error {
 	})
 }
 
-// ReadNotifikasi menandai satu notifikasi sebagai sudah dibaca
+// ReadNotifikasi godoc
+// @Summary Tandai notifikasi dibaca
+// @Description Menandai satu notifikasi spesifik sebagai sudah dibaca
+// @Tags Notifikasi
+// @Produce json
+// @Param id path int true "Notifikasi ID"
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Router /api/notifikasi/{id}/read [put]
 func ReadNotifikasi(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 	notifIDStr := c.Params("id")
@@ -51,7 +66,14 @@ func ReadNotifikasi(c *fiber.Ctx) error {
 	})
 }
 
-// ReadAllNotifikasi menandai semua notifikasi pengguna sebagai sudah dibaca
+// ReadAllNotifikasi godoc
+// @Summary Tandai semua notifikasi dibaca
+// @Description Menandai seluruh notifikasi milik pengguna sebagai sudah dibaca
+// @Tags Notifikasi
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Router /api/notifikasi/read-all [put]
 func ReadAllNotifikasi(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 

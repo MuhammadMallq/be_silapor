@@ -419,7 +419,20 @@ func GetRiwayatLaporan(c *fiber.Ctx) error {
 	})
 }
 
-// UpdateRating memproses pemberian rating dan feedback oleh mahasiswa
+// UpdateRating godoc
+// @Summary Beri rating laporan
+// @Description Mahasiswa memberikan rating (1-5) dan ulasan (feedback) pada laporan yang sudah selesai
+// @Tags Laporan
+// @Accept json
+// @Produce json
+// @Param id path int true "Laporan ID"
+// @Param body body model.RatingRequest true "Data rating & feedback"
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Failure 400 {object} model.Response
+// @Failure 403 {object} model.Response
+// @Failure 404 {object} model.Response
+// @Router /api/laporan/{id}/rating [put]
 func UpdateRating(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {
@@ -460,7 +473,19 @@ func UpdateRating(c *fiber.Ctx) error {
 	})
 }
 
-// AdminUpdateLaporan memproses update prioritas dan penugasan oleh Admin
+// AdminUpdateLaporan godoc
+// @Summary Update pengaturan laporan khusus Admin
+// @Description Admin dapat merubah tingkat prioritas laporan, menunjuk ulang petugas, atau mengatur tenggat waktu khusus (SLA kustom)
+// @Tags Laporan
+// @Accept json
+// @Produce json
+// @Param id path int true "Laporan ID"
+// @Param body body model.AdminUpdateLaporanRequest true "Data prioritas, penugasan, dan tenggat"
+// @Security BearerAuth
+// @Success 200 {object} model.Response
+// @Failure 400 {object} model.Response
+// @Failure 404 {object} model.Response
+// @Router /api/laporan/{id}/admin-update [put]
 func AdminUpdateLaporan(c *fiber.Ctx) error {
 	id, err := strconv.Atoi(c.Params("id"))
 	if err != nil {

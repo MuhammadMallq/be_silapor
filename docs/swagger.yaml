@@ -1,5 +1,50 @@
 basePath: /
 definitions:
+  handler.CategoryStat:
+    properties:
+      fill:
+        type: string
+      name:
+        type: string
+      value:
+        type: integer
+    type: object
+  handler.DashboardResponse:
+    properties:
+      belum_selesai:
+        type: integer
+      category_stats:
+        items:
+          $ref: '#/definitions/handler.CategoryStat'
+        type: array
+      dieskalasi:
+        type: integer
+      late_reports:
+        items:
+          $ref: '#/definitions/model.Laporan'
+        type: array
+      priority_reports:
+        items:
+          $ref: '#/definitions/model.Laporan'
+        type: array
+      terlambat:
+        type: integer
+      total_laporan:
+        type: integer
+      total_pengguna:
+        type: integer
+    type: object
+  model.AdminUpdateLaporanRequest:
+    properties:
+      petugas_id:
+        type: integer
+      prioritas:
+        type: string
+      tenggat_waktu:
+        type: string
+    required:
+    - prioritas
+    type: object
   model.ChangePasswordRequest:
     properties:
       new_password:
@@ -10,6 +55,25 @@ definitions:
     required:
     - new_password
     - old_password
+    type: object
+  model.KategoriFasilitas:
+    properties:
+      id:
+        type: integer
+      nama_kategori:
+        type: string
+      petugas:
+        allOf:
+        - $ref: '#/definitions/model.User'
+        description: |-
+          Relasi: satu kategori punya satu petugas (opsional)
+          omitempty berarti field ini tidak dikirim jika nilainya kosong/null
+      petugas_id:
+        description: Pointer (*uint) agar bisa bernilai null (belum ada petugas)
+        type: integer
+      sla_jam:
+        description: Batas waktu penanganan dalam jam (default 48 jam)
+        type: integer
     type: object
   model.KategoriRequest:
     properties:
@@ -25,6 +89,59 @@ definitions:
     required:
     - nama_kategori
     type: object
+  model.Laporan:
+    properties:
+      bukti_selesai:
+        description: Bukti foto setelah dikerjakan petugas
+        type: string
+      deskripsi:
+        description: Penjelasan detail kerusakan
+        type: string
+      feedback:
+        type: string
+      foto_url:
+        description: Link foto kerusakan (opsional)
+        type: string
+      id:
+        type: integer
+      kategori:
+        $ref: '#/definitions/model.KategoriFasilitas'
+      kategori_id:
+        description: ID kategori fasilitas yang dilaporkan
+        type: integer
+      lokasi:
+        description: 'Lokasi kerusakan (misal: "Gedung A Lantai 2")'
+        type: string
+      pelapor:
+        allOf:
+        - $ref: '#/definitions/model.User'
+        description: 'Relasi: laporan dimiliki oleh satu pelapor dan satu kategori'
+      pelapor_id:
+        description: ID mahasiswa yang membuat laporan
+        type: integer
+      petugas:
+        $ref: '#/definitions/model.User'
+      petugas_id:
+        description: ID Petugas spesifik yang ditugaskan admin
+        type: integer
+      prioritas:
+        description: normal / tinggi (naik otomatis jika lewat SLA)
+        type: string
+      rating:
+        type: integer
+      status:
+        description: dilaporkan/ditugaskan/dikerjakan/selesai
+        type: string
+      tanggal_lapor:
+        description: Diisi otomatis saat laporan dibuat
+        type: string
+      tanggal_selesai:
+        description: Diisi saat status berubah menjadi "selesai"
+        type: string
+      tenggat_waktu:
+        description: Tenggat waktu spesifik dari admin
+        type: string
+    type: object
   model.LoginRequest:
     properties:
       password:
@@ -34,6 +151,17 @@ definitions:
     required:
     - password
     - username
+    type: object
+  model.RatingRequest:
+    properties:
+      feedback:
+        type: string
+      rating:
+        maximum: 5
+        minimum: 1
+        type: integer
+    required:
+    - rating
     type: object
   model.RegisterRequest:
     properties:
@@ -54,18 +182,44 @@ definitions:
     type: object
   model.Response:
     properties:
-      data:
-        description: Data yang dikembalikan (bisa apapun)
+      data: {}
       error:
-        description: Pesan error jika ada (tidak dikirim jika kosong)
+        example: Detail error jika ada
         type: string
       message:
-        description: Pesan singkat hasil operasi
+        example: Detail pesan dari server
+        type: string
+    type: object
+  model.User:
+    properties:
+      created_at:
+        description: Diisi otomatis saat data dibuat
+        type: string
+      id:
+        type: integer
+      kategori_fasilitas:
+        description: 'Relasi: User (Petugas) bisa memegang beberapa kategori (opsional,
+          untuk preload di GetAllUsers)'
+        items:
+          $ref: '#/definitions/model.KategoriFasilitas'
+        type: array
+      nama:
+        type: string
+      role:
+        description: 'nilai: mahasiswa / petugas / admin'
+        type: string
+      username:
+        description: Harus unik, tidak boleh sama
         type: string
     type: object
 info:
-  contact: {}
-  description: API untuk Sistem Pengaduan & Tracking Fasilitas Kampus
+  contact:
+    name: Tim Pengembang SiLapor
+  description: |-
+    ## Sistem Pengaduan & Tracking Fasilitas Kampus
+    Aplikasi ini mengelola seluruh siklus pengaduan kerusakan fasilitas, mulai dari pelaporan oleh mahasiswa, penugasan dan pengerjaan oleh teknisi (petugas), hingga evaluasi dan pemantauan oleh Admin.
+
+    **Perhatian Keamanan**: API ini diperuntukkan bagi penggunaan internal aplikasi SiLapor. Beberapa *endpoint* manajemen administratif bersifat tertutup dan sengaja tidak diekspos di dalam dokumentasi publik ini demi keamanan.
   title: SiLapor API
   version: "1.0"
 paths:
@@ -101,6 +255,27 @@ paths:
       summary: Ubah password
       tags:
       - Auth
+  /api/dashboard/admin:
+    get:
+      description: Mengambil rekapitulasi data statistik laporan (total, belum selesai,
+        terlambat, eskalasi prioritas tinggi) dan statistik per kategori
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/model.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/handler.DashboardResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: Statistik Dashboard Admin
+      tags:
+      - Dashboard
   /api/kategori:
     get:
       description: Mengambil semua kategori fasilitas
@@ -308,6 +483,86 @@ paths:
       summary: Detail laporan
       tags:
       - Laporan
+  /api/laporan/{id}/admin-update:
+    put:
+      consumes:
+      - application/json
+      description: Admin dapat merubah tingkat prioritas laporan, menunjuk ulang petugas,
+        atau mengatur tenggat waktu khusus (SLA kustom)
+      parameters:
+      - description: Laporan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data prioritas, penugasan, dan tenggat
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.AdminUpdateLaporanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Update pengaturan laporan khusus Admin
+      tags:
+      - Laporan
+  /api/laporan/{id}/rating:
+    put:
+      consumes:
+      - application/json
+      description: Mahasiswa memberikan rating (1-5) dan ulasan (feedback) pada laporan
+        yang sudah selesai
+      parameters:
+      - description: Laporan ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Data rating & feedback
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RatingRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Beri rating laporan
+      tags:
+      - Laporan
   /api/laporan/{id}/riwayat:
     get:
       description: Melihat timeline riwayat perubahan status
@@ -399,6 +654,57 @@ paths:
       summary: Login user
       tags:
       - Auth
+  /api/notifikasi:
+    get:
+      description: Mengambil daftar notifikasi untuk pengguna yang sedang login
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Daftar Notifikasi
+      tags:
+      - Notifikasi
+  /api/notifikasi/{id}/read:
+    put:
+      description: Menandai satu notifikasi spesifik sebagai sudah dibaca
+      parameters:
+      - description: Notifikasi ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Tandai notifikasi dibaca
+      tags:
+      - Notifikasi
+  /api/notifikasi/read-all:
+    put:
+      description: Menandai seluruh notifikasi milik pengguna sebagai sudah dibaca
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Tandai semua notifikasi dibaca
+      tags:
+      - Notifikasi
   /api/register:
     post:
       consumes:
@@ -431,6 +737,7 @@ paths:
       - Auth
 securityDefinitions:
   BearerAuth:
+    description: 'Masukkan token JWT Anda dengan format: **Bearer &lt;token&gt;**'
     in: header
     name: Authorization
     type: apiKey

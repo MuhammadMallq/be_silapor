@@ -25,6 +25,14 @@ type DashboardResponse struct {
 	CategoryStats   []CategoryStat      `json:"category_stats"`
 }
 
+// GetAdminDashboard godoc
+// @Summary Statistik Dashboard Admin
+// @Description Mengambil rekapitulasi data statistik laporan (total, belum selesai, terlambat, eskalasi prioritas tinggi) dan statistik per kategori
+// @Tags Dashboard
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} model.Response{data=DashboardResponse}
+// @Router /api/dashboard/admin [get]
 func GetAdminDashboard(c *fiber.Ctx) error {
 	var resp DashboardResponse
 

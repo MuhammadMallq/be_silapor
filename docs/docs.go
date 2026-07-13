@@ -9,7 +9,9 @@ const docTemplate = `{
     "info": {
         "description": "{{escape .Description}}",
         "title": "{{.Title}}",
-        "contact": {},
+        "contact": {
+            "name": "Tim Pengembang SiLapor"
+        },
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -61,6 +63,43 @@ const docTemplate = `{
                         "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/dashboard/admin": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil rekapitulasi data statistik laporan (total, belum selesai, terlambat, eskalasi prioritas tinggi) dan statistik per kategori",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Dashboard"
+                ],
+                "summary": "Statistik Dashboard Admin",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/model.Response"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/handler.DashboardResponse"
+                                        }
+                                    }
+                                }
+                            ]
                         }
                     }
                 }
@@ -394,6 +433,128 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/laporan/{id}/admin-update": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin dapat merubah tingkat prioritas laporan, menunjuk ulang petugas, atau mengatur tenggat waktu khusus (SLA kustom)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Laporan"
+                ],
+                "summary": "Update pengaturan laporan khusus Admin",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Laporan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data prioritas, penugasan, dan tenggat",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AdminUpdateLaporanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/laporan/{id}/rating": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mahasiswa memberikan rating (1-5) dan ulasan (feedback) pada laporan yang sudah selesai",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Laporan"
+                ],
+                "summary": "Beri rating laporan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Laporan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Data rating \u0026 feedback",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RatingRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/laporan/{id}/riwayat": {
             "get": {
                 "security": [
@@ -536,6 +697,90 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/notifikasi": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil daftar notifikasi untuk pengguna yang sedang login",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifikasi"
+                ],
+                "summary": "Daftar Notifikasi",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notifikasi/read-all": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menandai seluruh notifikasi milik pengguna sebagai sudah dibaca",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifikasi"
+                ],
+                "summary": "Tandai semua notifikasi dibaca",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notifikasi/{id}/read": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menandai satu notifikasi spesifik sebagai sudah dibaca",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifikasi"
+                ],
+                "summary": "Tandai notifikasi dibaca",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Notifikasi ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
         "/api/register": {
             "post": {
                 "description": "Mendaftarkan user baru ke sistem",
@@ -584,6 +829,75 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handler.CategoryStat": {
+            "type": "object",
+            "properties": {
+                "fill": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "handler.DashboardResponse": {
+            "type": "object",
+            "properties": {
+                "belum_selesai": {
+                    "type": "integer"
+                },
+                "category_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.CategoryStat"
+                    }
+                },
+                "dieskalasi": {
+                    "type": "integer"
+                },
+                "late_reports": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Laporan"
+                    }
+                },
+                "priority_reports": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Laporan"
+                    }
+                },
+                "terlambat": {
+                    "type": "integer"
+                },
+                "total_laporan": {
+                    "type": "integer"
+                },
+                "total_pengguna": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.AdminUpdateLaporanRequest": {
+            "type": "object",
+            "required": [
+                "prioritas"
+            ],
+            "properties": {
+                "petugas_id": {
+                    "type": "integer"
+                },
+                "prioritas": {
+                    "type": "string"
+                },
+                "tenggat_waktu": {
+                    "type": "string"
+                }
+            }
+        },
         "model.ChangePasswordRequest": {
             "type": "object",
             "required": [
@@ -597,6 +911,33 @@ const docTemplate = `{
                 },
                 "old_password": {
                     "type": "string"
+                }
+            }
+        },
+        "model.KategoriFasilitas": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "nama_kategori": {
+                    "type": "string"
+                },
+                "petugas": {
+                    "description": "Relasi: satu kategori punya satu petugas (opsional)\nomitempty berarti field ini tidak dikirim jika nilainya kosong/null",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.User"
+                        }
+                    ]
+                },
+                "petugas_id": {
+                    "description": "Pointer (*uint) agar bisa bernilai null (belum ada petugas)",
+                    "type": "integer"
+                },
+                "sla_jam": {
+                    "description": "Batas waktu penanganan dalam jam (default 48 jam)",
+                    "type": "integer"
                 }
             }
         },
@@ -620,6 +961,82 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Laporan": {
+            "type": "object",
+            "properties": {
+                "bukti_selesai": {
+                    "description": "Bukti foto setelah dikerjakan petugas",
+                    "type": "string"
+                },
+                "deskripsi": {
+                    "description": "Penjelasan detail kerusakan",
+                    "type": "string"
+                },
+                "feedback": {
+                    "type": "string"
+                },
+                "foto_url": {
+                    "description": "Link foto kerusakan (opsional)",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "kategori": {
+                    "$ref": "#/definitions/model.KategoriFasilitas"
+                },
+                "kategori_id": {
+                    "description": "ID kategori fasilitas yang dilaporkan",
+                    "type": "integer"
+                },
+                "lokasi": {
+                    "description": "Lokasi kerusakan (misal: \"Gedung A Lantai 2\")",
+                    "type": "string"
+                },
+                "pelapor": {
+                    "description": "Relasi: laporan dimiliki oleh satu pelapor dan satu kategori",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.User"
+                        }
+                    ]
+                },
+                "pelapor_id": {
+                    "description": "ID mahasiswa yang membuat laporan",
+                    "type": "integer"
+                },
+                "petugas": {
+                    "$ref": "#/definitions/model.User"
+                },
+                "petugas_id": {
+                    "description": "ID Petugas spesifik yang ditugaskan admin",
+                    "type": "integer"
+                },
+                "prioritas": {
+                    "description": "normal / tinggi (naik otomatis jika lewat SLA)",
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
+                },
+                "status": {
+                    "description": "dilaporkan/ditugaskan/dikerjakan/selesai",
+                    "type": "string"
+                },
+                "tanggal_lapor": {
+                    "description": "Diisi otomatis saat laporan dibuat",
+                    "type": "string"
+                },
+                "tanggal_selesai": {
+                    "description": "Diisi saat status berubah menjadi \"selesai\"",
+                    "type": "string"
+                },
+                "tenggat_waktu": {
+                    "description": "Tenggat waktu spesifik dari admin",
+                    "type": "string"
+                }
+            }
+        },
         "model.LoginRequest": {
             "type": "object",
             "required": [
@@ -632,6 +1049,22 @@ const docTemplate = `{
                 },
                 "username": {
                     "type": "string"
+                }
+            }
+        },
+        "model.RatingRequest": {
+            "type": "object",
+            "required": [
+                "rating"
+            ],
+            "properties": {
+                "feedback": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer",
+                    "maximum": 5,
+                    "minimum": 1
                 }
             }
         },
@@ -662,15 +1095,43 @@ const docTemplate = `{
         "model.Response": {
             "type": "object",
             "properties": {
-                "data": {
-                    "description": "Data yang dikembalikan (bisa apapun)"
-                },
+                "data": {},
                 "error": {
-                    "description": "Pesan error jika ada (tidak dikirim jika kosong)",
-                    "type": "string"
+                    "type": "string",
+                    "example": "Detail error jika ada"
                 },
                 "message": {
-                    "description": "Pesan singkat hasil operasi",
+                    "type": "string",
+                    "example": "Detail pesan dari server"
+                }
+            }
+        },
+        "model.User": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "description": "Diisi otomatis saat data dibuat",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "kategori_fasilitas": {
+                    "description": "Relasi: User (Petugas) bisa memegang beberapa kategori (opsional, untuk preload di GetAllUsers)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.KategoriFasilitas"
+                    }
+                },
+                "nama": {
+                    "type": "string"
+                },
+                "role": {
+                    "description": "nilai: mahasiswa / petugas / admin",
+                    "type": "string"
+                },
+                "username": {
+                    "description": "Harus unik, tidak boleh sama",
                     "type": "string"
                 }
             }
@@ -678,6 +1139,7 @@ const docTemplate = `{
     },
     "securityDefinitions": {
         "BearerAuth": {
+            "description": "Masukkan token JWT Anda dengan format: **Bearer \u0026lt;token\u0026gt;**",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -692,7 +1154,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "SiLapor API",
-	Description:      "API untuk Sistem Pengaduan & Tracking Fasilitas Kampus",
+	Description:      "## Sistem Pengaduan & Tracking Fasilitas Kampus\nAplikasi ini mengelola seluruh siklus pengaduan kerusakan fasilitas, mulai dari pelaporan oleh mahasiswa, penugasan dan pengerjaan oleh teknisi (petugas), hingga evaluasi dan pemantauan oleh Admin.\n\n**Perhatian Keamanan**: API ini diperuntukkan bagi penggunaan internal aplikasi SiLapor. Beberapa *endpoint* manajemen administratif bersifat tertutup dan sengaja tidak diekspos di dalam dokumentasi publik ini demi keamanan.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

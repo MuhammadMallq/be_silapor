@@ -13,11 +13,16 @@ import (
 
 // @title SiLapor API
 // @version 1.0
-// @description API untuk Sistem Pengaduan & Tracking Fasilitas Kampus
+// @description ## Sistem Pengaduan & Tracking Fasilitas Kampus
+// @description Aplikasi ini mengelola seluruh siklus pengaduan kerusakan fasilitas, mulai dari pelaporan oleh mahasiswa, penugasan dan pengerjaan oleh teknisi (petugas), hingga evaluasi dan pemantauan oleh Admin.
+// @description 
+// @description **Perhatian Keamanan**: API ini diperuntukkan bagi penggunaan internal aplikasi SiLapor. Beberapa *endpoint* manajemen administratif bersifat tertutup dan sengaja tidak diekspos di dalam dokumentasi publik ini demi keamanan.
+// @contact.name Tim Pengembang SiLapor
 // @BasePath /
 // @securityDefinitions.apikey BearerAuth
 // @in header
 // @name Authorization
+// @description Masukkan token JWT Anda dengan format: **Bearer &lt;token&gt;**
 func main() {
 	// Load env variables (Ignore error jika file .env tidak ada, misalnya saat di Railway)
 	godotenv.Load()
