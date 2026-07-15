@@ -154,11 +154,25 @@ func CreateLaporan(c *fiber.Ctx) error {
 	var fotoURL string
 	file, err := c.FormFile("bukti")
 	if err == nil && file != nil { // File is optional
+		// Validasi ukuran file (Max 4MB)
+		if file.Size > 4*1024*1024 {
+			return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+				Message: "gagal mengunggah: ukuran file maksimal 4MB",
+			})
+		}
+		// Validasi tipe file
+		contentType := file.Header.Get("Content-Type")
+		if contentType != "image/jpeg" && contentType != "image/png" && contentType != "video/mp4" {
+			return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+				Message: "gagal mengunggah: format file tidak didukung, hanya gunakan jpg, png, atau mp4",
+			})
+		}
+
 		// Upload to Supabase
 		url, uploadErr := storage.UploadToSupabase(file)
 		if uploadErr != nil {
 			return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
-				Message: "gagal mengunggah bukti gambar",
+				Message: "gagal mengunggah bukti",
 				Error:   uploadErr.Error(),
 			})
 		}
@@ -300,6 +314,20 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 			return c.Status(fiber.StatusBadRequest).JSON(model.Response{
 				Message: "bukti penyelesaian (foto/video) wajib diunggah",
 				Error:   err.Error(),
+			})
+		}
+
+		// Validasi ukuran file (Max 4MB)
+		if file.Size > 4*1024*1024 {
+			return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+				Message: "gagal mengunggah: ukuran file maksimal 4MB",
+			})
+		}
+		// Validasi tipe file
+		contentType := file.Header.Get("Content-Type")
+		if contentType != "image/jpeg" && contentType != "image/png" && contentType != "video/mp4" {
+			return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+				Message: "gagal mengunggah: format file tidak didukung, hanya gunakan jpg, png, atau mp4",
 			})
 		}
 

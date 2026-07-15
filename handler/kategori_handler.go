@@ -175,6 +175,21 @@ func DeleteKategori(c *fiber.Ctx) error {
 		})
 	}
 
+	// Cek apakah kategori sedang digunakan oleh laporan
+	var count int64
+	if err := config.DB.Model(&model.Laporan{}).Where("kategori_id = ?", id).Count(&count).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
+			Message: "terjadi kesalahan saat memverifikasi penggunaan kategori",
+			Error:   err.Error(),
+		})
+	}
+
+	if count > 0 {
+		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+			Message: "gagal menghapus: kategori ini sedang digunakan oleh laporan aktif",
+		})
+	}
+
 	if err := repository.DeleteKategori(uint(id)); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
 			Message: "gagal menghapus kategori",
