@@ -122,6 +122,7 @@ func GetLaporanByID(c *fiber.Ctx) error {
 // @Router /api/laporan [post]
 func CreateLaporan(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
+	role := c.Locals("role").(string)
 
 	kategoriIDStr := c.FormValue("kategori_id")
 	lokasi := c.FormValue("lokasi")
@@ -148,6 +149,25 @@ func CreateLaporan(c *fiber.Ctx) error {
 			Message: "kategori tidak ditemukan",
 			Error:   err.Error(),
 		})
+	}
+
+	// Tentukan siapa Pelapor:
+	// - Jika role "mahasiswa", pakai ID dirinya sendiri
+	// - Jika role "admin", bisa isi form "pelapor_id" untuk buat laporan atas nama mahasiswa tertentu.
+	//   Jika "pelapor_id" tidak diisi, pakai ID admin itu sendiri.
+	pelaporID := userID
+	if role == "admin" {
+		pelaporIDStr := c.FormValue("pelapor_id")
+		if pelaporIDStr != "" {
+			parsedID, parseErr := strconv.ParseUint(pelaporIDStr, 10, 32)
+			if parseErr != nil {
+				return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+					Message: "pelapor_id tidak valid",
+					Error:   parseErr.Error(),
+				})
+			}
+			pelaporID = uint(parsedID)
+		}
 	}
 
 	// Handle file upload
@@ -186,7 +206,7 @@ func CreateLaporan(c *fiber.Ctx) error {
 	}
 
 	laporan := model.Laporan{
-		PelaporID:  userID,
+		PelaporID:  pelaporID,
 		KategoriID: uint(kategoriID),
 		Lokasi:     lokasi,
 		Deskripsi:  deskripsi,
