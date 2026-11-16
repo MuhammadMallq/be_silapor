@@ -74,11 +74,11 @@ func DeleteLaporan(id uint) error {
 
 // FindPendingForEscalation mencari laporan yang BELUM selesai dan MASIH prioritas "normal"
 // Dipanggil oleh scheduler setiap 30 menit untuk dicek apakah sudah melewati batas SLA
-// Status yang dicek: "dilaporkan" dan "ditugaskan" (belum dikerjakan atau selesai)
+// Status yang dicek: "ditinjau", "diterima", "dilaporkan", dan "ditugaskan" (belum diproses/selesai)
 func FindPendingForEscalation() ([]model.Laporan, error) {
 	var laporans []model.Laporan
 	err := config.DB.Preload("Kategori").
-		Where("status IN ? AND prioritas = ?", []string{"dilaporkan", "ditugaskan"}, "normal").
+		Where("status IN ? AND prioritas = ?", []string{"ditinjau", "diterima", "dilaporkan", "ditugaskan"}, "normal").
 		Find(&laporans).Error
 	return laporans, err
 }

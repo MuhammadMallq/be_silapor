@@ -32,7 +32,7 @@ func GetAllLaporan(c *fiber.Ctx) error {
 		laporans, err = repository.FindAllLaporan()
 	case "petugas":
 		laporans, err = repository.FindLaporanByKategoriPetugasID(userID)
-	case "mahasiswa":
+	case "mahasiswa", "dosen":
 		laporans, err = repository.FindLaporanByPelaporID(userID)
 	default:
 		return c.Status(fiber.StatusForbidden).JSON(model.Response{
@@ -84,20 +84,10 @@ func GetLaporanByID(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 	role := c.Locals("role").(string)
 
-	if role == "mahasiswa" && laporan.PelaporID != userID {
+	if (role == "mahasiswa" || role == "dosen") && laporan.PelaporID != userID {
 		return c.Status(fiber.StatusForbidden).JSON(model.Response{
 			Message: "Akses ditolak: Anda tidak memiliki akses ke laporan ini",
 		})
-	}
-
-	if role == "petugas" {
-		isAssigned := (laporan.PetugasID != nil && *laporan.PetugasID == userID) || 
-			(laporan.PetugasID == nil && laporan.Kategori.PetugasID != nil && *laporan.Kategori.PetugasID == userID)
-		if !isAssigned {
-			return c.Status(fiber.StatusForbidden).JSON(model.Response{
-				Message: "Akses ditolak: Laporan ini tidak ditugaskan kepada Anda",
-			})
-		}
 	}
 
 	return c.JSON(model.Response{
@@ -199,11 +189,8 @@ func CreateLaporan(c *fiber.Ctx) error {
 		fotoURL = url
 	}
 
-	// Determine initial status based on whether petugas is assigned
-	initialStatus := "dilaporkan"
-	if kategori.PetugasID != nil {
-		initialStatus = "ditugaskan"
-	}
+	// Status awal: Setiap laporan masuk ke status "ditinjau" oleh admin
+	initialStatus := "ditinjau"
 
 	laporan := model.Laporan{
 		PelaporID:  pelaporID,
@@ -213,6 +200,7 @@ func CreateLaporan(c *fiber.Ctx) error {
 		FotoURL:    fotoURL,
 		Status:     initialStatus,
 		Prioritas:  "normal",
+		PetugasID:  kategori.PetugasID,
 	}
 
 	if err := repository.CreateLaporan(&laporan); err != nil {
@@ -226,19 +214,9 @@ func CreateLaporan(c *fiber.Ctx) error {
 	riwayat := model.RiwayatStatus{
 		LaporanID:  laporan.ID,
 		Status:     initialStatus,
-		Keterangan: "Laporan baru dibuat",
+		Keterangan: "Laporan baru dibuat dan sedang ditinjau oleh Admin",
 	}
 	repository.CreateRiwayat(&riwayat)
-
-	// If auto-assigned, create second riwayat entry
-	if initialStatus == "ditugaskan" {
-		riwayatAssign := model.RiwayatStatus{
-			LaporanID:  laporan.ID,
-			Status:     "ditugaskan",
-			Keterangan: "Otomatis ditugaskan ke petugas kategori",
-		}
-		repository.CreateRiwayat(&riwayatAssign)
-	}
 
 	// Reload with relations
 	result, _ := repository.FindLaporanByID(laporan.ID)
@@ -282,14 +260,18 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 
 	// Validate status
 	validStatuses := map[string]bool{
+		"ditinjau":   true,
+		"diterima":   true,
+		"diproses":   true,
+		"selesai":    true,
+		"ditolak":    true,
 		"dilaporkan": true,
 		"ditugaskan": true,
 		"dikerjakan": true,
-		"selesai":    true,
 	}
 	if !validStatuses[req.Status] {
 		return c.Status(fiber.StatusBadRequest).JSON(model.Response{
-			Message: "status tidak valid. Gunakan: dilaporkan, ditugaskan, dikerjakan, atau selesai",
+			Message: "status tidak valid. Gunakan: ditinjau, diterima, diproses, selesai, atau ditolak",
 		})
 	}
 
@@ -304,6 +286,13 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 	// Authorization check
 	userID := c.Locals("user_id").(uint)
 	role := c.Locals("role").(string)
+
+	// Validasi peninjauan oleh Admin (hanya admin yang berhak menerima atau menolak)
+	if (req.Status == "diterima" || req.Status == "ditolak") && role != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(model.Response{
+			Message: "Akses ditolak: Hanya Admin yang berwenang menerima atau menolak laporan",
+		})
+	}
 	
 	if role == "petugas" {
 		isAssigned := (laporan.PetugasID != nil && *laporan.PetugasID == userID) || 
@@ -315,13 +304,67 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 		}
 	}
 
+	// Penanganan status Ditolak
+	if req.Status == "ditolak" {
+		alasan := req.AlasanPenolakan
+		if alasan == "" {
+			alasan = c.FormValue("alasan_penolakan")
+		}
+		if alasan == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+				Message: "alasan penolakan wajib diisi",
+			})
+		}
+		laporan.AlasanPenolakan = alasan
+
+		// Upload bukti penolakan jika ada (opsional)
+		filePenolakan, errFile := c.FormFile("bukti_penolakan")
+		if errFile == nil && filePenolakan != nil {
+			if filePenolakan.Size > 4*1024*1024 {
+				return c.Status(fiber.StatusBadRequest).JSON(model.Response{
+					Message: "gagal mengunggah: ukuran file bukti penolakan maksimal 4MB",
+				})
+			}
+			urlBukti, uploadErr := storage.UploadToSupabase(filePenolakan)
+			if uploadErr != nil {
+				return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
+					Message: "gagal mengunggah bukti penolakan",
+					Error:   uploadErr.Error(),
+				})
+			}
+			laporan.BuktiPenolakan = urlBukti
+		}
+	}
+
 	laporan.Status = req.Status
 
-	// Buat notifikasi ke mahasiswa (Pelapor)
+	// Keterangan riwayat & pesan notifikasi spesifik
+	keterangan := "Status diubah menjadi " + req.Status
+	pesanNotif := "Status laporan Anda tentang " + laporan.Deskripsi + " diubah menjadi: " + req.Status
+
+	switch req.Status {
+	case "ditinjau":
+		keterangan = "Laporan masuk tahap peninjauan oleh Admin"
+		pesanNotif = "Laporan Anda sedang ditinjau oleh Admin"
+	case "diterima":
+		keterangan = "Laporan disetujui oleh Admin dan diteruskan ke Petugas"
+		pesanNotif = "Kabar baik! Laporan Anda telah disetujui oleh Admin dan segera diproses"
+	case "diproses", "dikerjakan":
+		keterangan = "Laporan sedang diproses dan dikerjakan oleh Petugas"
+		pesanNotif = "Laporan Anda sedang diproses oleh petugas teknisi"
+	case "selesai":
+		keterangan = "Laporan telah selesai ditangani"
+		pesanNotif = "Laporan Anda telah selesai ditangani! Silakan beri ulasan/rating"
+	case "ditolak":
+		keterangan = "Laporan ditolak oleh Admin. Alasan: " + laporan.AlasanPenolakan
+		pesanNotif = "Laporan Anda ditolak oleh Admin. Alasan: " + laporan.AlasanPenolakan
+	}
+
+	// Buat notifikasi ke Pelapor
 	repository.CreateNotifikasi(&model.Notifikasi{
 		UserID:    laporan.PelaporID,
 		LaporanID: &laporan.ID,
-		Pesan:     "Status laporan Anda tentang " + laporan.Deskripsi + " diubah menjadi: " + req.Status,
+		Pesan:     pesanNotif,
 	})
 
 	// If status is "selesai", set tanggal_selesai and handle bukti_selesai upload
@@ -368,17 +411,12 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 		})
 	}
 
-	// Create riwayat entry
-	keterangan := "Status diubah menjadi " + req.Status
-	if req.Status == "selesai" {
-		keterangan = "Laporan telah selesai ditangani"
-	}
-
 	riwayat := model.RiwayatStatus{
 		LaporanID:  laporan.ID,
 		Status:     req.Status,
 		Keterangan: keterangan,
 	}
+	repository.CreateRiwayat(&riwayat)
 	repository.CreateRiwayat(&riwayat)
 
 	return c.JSON(model.Response{
@@ -574,17 +612,19 @@ func AdminUpdateLaporan(c *fiber.Ctx) error {
 		if *req.PetugasID == 0 {
 			// Kosongkan petugas (set NULL)
 			updates["petugas_id"] = nil
-			// Kembalikan status ke dilaporkan jika petugas dikosongkan
-			updates["status"] = "dilaporkan"
+			// Kembalikan status ke ditinjau jika petugas dikosongkan
+			if laporan.Status == "diterima" || laporan.Status == "ditugaskan" {
+				updates["status"] = "ditinjau"
+			}
 		} else {
 			updates["petugas_id"] = *req.PetugasID
-			// Otomatis ubah status menjadi "ditugaskan" saat ada petugas
-			if laporan.Status == "dilaporkan" {
-				updates["status"] = "ditugaskan"
+			// Otomatis ubah status menjadi "diterima" saat ada petugas
+			if laporan.Status == "ditinjau" || laporan.Status == "dilaporkan" {
+				updates["status"] = "diterima"
 				repository.CreateRiwayat(&model.RiwayatStatus{
 					LaporanID:  laporan.ID,
-					Status:     "ditugaskan",
-					Keterangan: "Laporan ditugaskan ke petugas oleh Admin",
+					Status:     "diterima",
+					Keterangan: "Laporan diterima dan ditugaskan ke petugas oleh Admin",
 				})
 			}
 			// Buat notifikasi ke petugas baru (hanya jika petugas berubah)

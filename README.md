@@ -12,9 +12,10 @@ SiLapor adalah RESTful API backend untuk sistem pelaporan kerusakan fasilitas ka
 
 | Role | Kemampuan |
 |---|---|
-| **Mahasiswa** | Membuat laporan kerusakan, memantau status laporan milik sendiri |
-| **Petugas** | Melihat & memperbarui status laporan di kategori yang ditugaskan |
-| **Admin** | Akses penuh: kelola user, kategori, laporan, dan pantau dashboard |
+| **Mahasiswa** | Registrasi mandiri, membuat laporan kerusakan, memantau status laporan milik sendiri, memberi rating & ulasan |
+| **Dosen** | Akun diberikan (given) oleh Admin, membuat laporan kerusakan, memantau status laporan milik sendiri, memberi rating & ulasan |
+| **Petugas** | Melihat & memperbarui status pengerjaan laporan (`diproses` → `selesai`) di kategori yang ditugaskan |
+| **Admin** | Akses penuh: tinjau laporan baru (`ditinjau` → `diterima` / `ditolak`), kelola user & petugas, kategori, prioritas/SLA, dan dashboard |
 
 ### Fitur Utama
 
@@ -138,11 +139,15 @@ Database menggunakan **PostgreSQL** yang di-hosting di [Supabase](https://supaba
 | `lokasi` | `string` | Lokasi kerusakan (misal: "Gedung A Lantai 2") |
 | `deskripsi` | `string` | Penjelasan detail kerusakan |
 | `foto_url` | `string` | URL foto bukti kerusakan (opsional) |
-| `status` | `string` | `dilaporkan` / `ditugaskan` / `dikerjakan` / `selesai` |
+| `status` | `string` | `ditinjau` → `diterima` → `diproses` → `selesai` (atau `ditolak`) |
 | `prioritas` | `string` | `normal` (default) / `tinggi` (otomatis naik jika lewat SLA) |
 | `tanggal_lapor` | `timestamp` | Waktu laporan dibuat (auto-fill) |
 | `tanggal_selesai` | `timestamp` nullable | Diisi saat status berubah ke `selesai` |
 | `bukti_selesai` | `string` | URL foto bukti penyelesaian oleh petugas |
+| `alasan_penolakan` | `string` nullable | Alasan penolakan laporan jika status `ditolak` oleh Admin |
+| `bukti_penolakan` | `string` nullable | URL foto bukti penolakan laporan (opsional) |
+| `rating` | `int` nullable | Skor penilaian penanganan (1-5 bintang) oleh pelapor |
+| `feedback` | `string` nullable | Ulasan / masukan pelapor atas penanganan laporan |
 
 #### `riwayat_status`
 
@@ -473,27 +478,30 @@ silapor.exe        # Windows
 }
 ```
 
-> Status awal otomatis `ditugaskan` jika kategori sudah memiliki petugas, atau `dilaporkan` jika belum.
+> Status awal otomatis `ditinjau` untuk ditinjau terlebih dahulu oleh Admin.
 </details>
 
 <details>
 <summary><b>PUT /api/laporan/:id/status — Update status laporan 🔒 Admin/Petugas</b></summary>
 
-**Untuk status selain `selesai` (Content-Type: application/json):**
+**Alur Status:**
+1. `ditinjau` → `diterima` (oleh Admin untuk menyetujui laporan)
+2. `ditinjau` → `ditolak` (oleh Admin jika tidak valid, wajib menyertakan `alasan_penolakan` dan opsional file `bukti_penolakan`)
+3. `diterima` → `diproses` (oleh Petugas/Admin saat mulai penanganan)
+4. `diproses` → `selesai` (oleh Petugas/Admin saat penanganan tuntas, wajib melampirkan file `bukti_selesai`)
+
+**Untuk perubahan status umum (Content-Type: application/json atau multipart/form-data):**
 ```json
 {
-  "status": "dikerjakan"
+  "status": "diproses"
 }
 ```
 
-**Untuk status `selesai` (Content-Type: multipart/form-data):**
+**Untuk status `ditolak` (oleh Admin):**
+- Field form/json: `status` = `"ditolak"`, `alasan_penolakan` = text alasan, `bukti_penolakan` = file bukti foto (opsional).
 
-| Field | Tipe | Wajib | Keterangan |
-|---|---|---|---|
-| `status` | string | ✅ | Nilai: `selesai` |
-| `bukti_selesai` | file | ✅ | Foto bukti penyelesaian (wajib saat selesai) |
-
-**Nilai status yang valid:** `dilaporkan` / `ditugaskan` / `dikerjakan` / `selesai`
+**Untuk status `selesai` (oleh Petugas/Admin):**
+- Field form: `status` = `"selesai"`, `bukti_selesai` = file bukti foto/video perbaikan.
 
 **Response 200 OK:**
 ```json

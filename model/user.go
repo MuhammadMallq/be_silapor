@@ -9,7 +9,7 @@ type User struct {
 	Nama      string    `json:"nama" gorm:"not null"`
 	Username  string    `json:"username" gorm:"uniqueIndex;not null"` // Harus unik, tidak boleh sama
 	Password  string    `json:"-" gorm:"not null"`                    // json:"-" berarti password TIDAK dikirim ke response
-	Role      string    `json:"role" gorm:"not null;default:mahasiswa"` // nilai: mahasiswa / petugas / admin
+	Role      string    `json:"role" gorm:"not null;default:mahasiswa"` // nilai: mahasiswa / dosen / petugas / admin
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`     // Diisi otomatis saat data dibuat
 
 	// Relasi: User (Petugas) bisa memegang beberapa kategori (opsional, untuk preload di GetAllUsers)

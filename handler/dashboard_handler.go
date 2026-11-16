@@ -39,27 +39,27 @@ func GetAdminDashboard(c *fiber.Ctx) error {
 	// Total Laporan
 	config.DB.Model(&model.Laporan{}).Count(&resp.TotalLaporan)
 
-	// Belum Selesai
-	config.DB.Model(&model.Laporan{}).Where("status != ?", "selesai").Count(&resp.BelumSelesai)
+	// Belum Selesai (hanya laporan aktif yang belum selesai dan tidak ditolak)
+	config.DB.Model(&model.Laporan{}).Where("status NOT IN (?)", []string{"selesai", "ditolak"}).Count(&resp.BelumSelesai)
 
-	// Dieskalasi (Prioritas Tinggi) - hanya yang belum selesai
-	config.DB.Model(&model.Laporan{}).Where("prioritas = ?", "tinggi").Where("status != ?", "selesai").Count(&resp.Dieskalasi)
+	// Dieskalasi (Prioritas Tinggi) - hanya yang belum selesai dan tidak ditolak
+	config.DB.Model(&model.Laporan{}).Where("prioritas = ?", "tinggi").Where("status NOT IN (?)", []string{"selesai", "ditolak"}).Count(&resp.Dieskalasi)
 
 	// Total Pengguna
 	config.DB.Model(&model.User{}).Count(&resp.TotalPengguna)
 
-	// Priority Reports (Preload Kategori & Pelapor) - hanya yang belum selesai
+	// Priority Reports (Preload Kategori & Pelapor) - hanya yang belum selesai dan tidak ditolak
 	config.DB.Preload("Kategori").Preload("Pelapor").
 		Where("prioritas = ?", "tinggi").
-		Where("status != ?", "selesai").
+		Where("status NOT IN (?)", []string{"selesai", "ditolak"}).
 		Order("tanggal_lapor desc").
 		Limit(5).
 		Find(&resp.PriorityReports)
 
-	// Filter Laporan Terlambat (Belum Selesai & Lewat SLA / Tenggat Waktu)
+	// Filter Laporan Terlambat (Belum Selesai & Tidak Ditolak & Lewat SLA / Tenggat Waktu)
 	var activeLaporans []model.Laporan
 	config.DB.Preload("Kategori").Preload("Pelapor").
-		Where("status != ?", "selesai").
+		Where("status NOT IN (?)", []string{"selesai", "ditolak"}).
 		Order("tanggal_lapor asc"). // yang paling lama dibuat / paling lama telat
 		Find(&activeLaporans)
 

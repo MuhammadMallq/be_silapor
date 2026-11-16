@@ -11,16 +11,18 @@ type Laporan struct {
 	Lokasi         string     `json:"lokasi" gorm:"not null"`       // Lokasi kerusakan (misal: "Gedung A Lantai 2")
 	Deskripsi      string     `json:"deskripsi" gorm:"not null"`    // Penjelasan detail kerusakan
 	FotoURL        string     `json:"foto_url"`                     // Link foto kerusakan (opsional)
-	Status         string     `json:"status" gorm:"not null;default:dilaporkan"` // dilaporkan/ditugaskan/dikerjakan/selesai
+	Status         string     `json:"status" gorm:"not null;default:ditinjau"` // ditinjau/diterima/diproses/selesai/ditolak
 	Prioritas      string     `json:"prioritas" gorm:"not null;default:normal"`  // normal / tinggi (naik otomatis jika lewat SLA)
 	TanggalLapor   time.Time  `json:"tanggal_lapor" gorm:"autoCreateTime"` // Diisi otomatis saat laporan dibuat
 	TanggalSelesai *time.Time `json:"tanggal_selesai"` // Diisi saat status berubah menjadi "selesai"
 	BuktiSelesai   string     `json:"bukti_selesai"`   // Bukti foto setelah dikerjakan petugas
 
-	PetugasID    *uint      `json:"petugas_id"`   // ID Petugas spesifik yang ditugaskan admin
-	TenggatWaktu *time.Time `json:"tenggat_waktu"` // Tenggat waktu spesifik dari admin
-	Rating       int        `json:"rating" gorm:"default:0"`
-	Feedback     string     `json:"feedback"`
+	PetugasID       *uint      `json:"petugas_id"`   // ID Petugas spesifik yang ditugaskan admin
+	TenggatWaktu    *time.Time `json:"tenggat_waktu"` // Tenggat waktu spesifik dari admin
+	Rating          int        `json:"rating" gorm:"default:0"`
+	Feedback        string     `json:"feedback"`
+	AlasanPenolakan string     `json:"alasan_penolakan"` // Alasan jika ditolak oleh admin
+	BuktiPenolakan  string     `json:"bukti_penolakan"`  // Bukti foto jika ditolak oleh admin
 
 	// Relasi: laporan dimiliki oleh satu pelapor dan satu kategori
 	Pelapor  *User              `json:"pelapor,omitempty" gorm:"foreignKey:PelaporID"`
@@ -55,7 +57,8 @@ type CreateLaporanRequest struct {
 
 // UpdateStatusRequest adalah body JSON untuk endpoint PUT /laporan/:id/status
 type UpdateStatusRequest struct {
-	Status string `json:"status" form:"status" validate:"required"` // Nilai: dilaporkan/ditugaskan/dikerjakan/selesai
+	Status          string `json:"status" form:"status" validate:"required"` // ditinjau/diterima/diproses/selesai/ditolak
+	AlasanPenolakan string `json:"alasan_penolakan" form:"alasan_penolakan"` // wajib jika status ditolak
 }
 
 // RatingRequest adalah body JSON untuk endpoint PUT /laporan/:id/rating

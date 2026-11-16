@@ -54,8 +54,8 @@ func ConnectDatabase() {
 		log.Println("Kolom bukti_selesai sudah ada di tabel laporan.")
 	}
 
-    // Migrasi manual untuk kolom PetugasID, TenggatWaktu, Rating, Feedback
-    columnsToAdd := []string{"PetugasID", "TenggatWaktu", "Rating", "Feedback"}
+    // Migrasi manual untuk kolom PetugasID, TenggatWaktu, Rating, Feedback, AlasanPenolakan, BuktiPenolakan
+    columnsToAdd := []string{"PetugasID", "TenggatWaktu", "Rating", "Feedback", "AlasanPenolakan", "BuktiPenolakan"}
     for _, col := range columnsToAdd {
         if !DB.Migrator().HasColumn(&model.Laporan{}, col) {
             err = DB.Migrator().AddColumn(&model.Laporan{}, col)
@@ -66,6 +66,17 @@ func ConnectDatabase() {
             }
         }
     }
+
+	// Update constraint status & role
+	DB.Exec(`
+		ALTER TABLE laporan DROP CONSTRAINT IF EXISTS laporan_status_check;
+		ALTER TABLE laporan ADD CONSTRAINT laporan_status_check 
+		CHECK (status IN ('ditinjau', 'diterima', 'diproses', 'selesai', 'ditolak', 'dilaporkan', 'ditugaskan', 'dikerjakan'));
+
+		ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+		ALTER TABLE users ADD CONSTRAINT users_role_check 
+		CHECK (role IN ('admin', 'petugas', 'mahasiswa', 'dosen'));
+	`)
 
 	// Migrasi untuk tabel baru Notifikasi secara manual karena AutoMigrate GORM bentrok dengan relasi users
 	err = DB.Exec(`

@@ -61,6 +61,7 @@ func UploadToSupabase(fileHeader *multipart.FileHeader) (string, error) {
 	}
 
 	// Set headers
+	req.Header.Set("apikey", supabaseKey)
 	req.Header.Set("Authorization", "Bearer "+supabaseKey)
 	req.Header.Set("Content-Type", contentType)
 

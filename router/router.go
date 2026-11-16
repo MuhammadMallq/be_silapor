@@ -58,15 +58,15 @@ func SetupRoutes(app *fiber.App) {
 	// GET /api/laporan/:id/riwayat → lihat timeline perubahan status laporan (semua role)
 	api.Get("/laporan/:id/riwayat", middleware.JWTProtected(), handler.GetRiwayatLaporan)
 
-	// POST /api/laporan → mahasiswa dan admin bisa membuat laporan baru
-	// Admin dapat membuat laporan atas nama mahasiswa tertentu (opsional, via field pelapor_id)
-	api.Post("/laporan", middleware.JWTProtected("mahasiswa", "admin"), handler.CreateLaporan)
+	// POST /api/laporan → mahasiswa, dosen, dan admin bisa membuat laporan baru
+	// Admin dapat membuat laporan atas nama mahasiswa/dosen tertentu (opsional, via field pelapor_id)
+	api.Post("/laporan", middleware.JWTProtected("mahasiswa", "dosen", "admin"), handler.CreateLaporan)
 
 	// PUT /api/laporan/:id/status → hanya admin dan petugas yang bisa ubah status laporan
 	api.Put("/laporan/:id/status", middleware.JWTProtected("admin", "petugas"), handler.UpdateStatusLaporan)
 
-	// PUT /api/laporan/:id/rating → hanya mahasiswa yang bisa memberi rating
-	api.Put("/laporan/:id/rating", middleware.JWTProtected("mahasiswa"), handler.UpdateRating)
+	// PUT /api/laporan/:id/rating → pelapor (mahasiswa dan dosen) yang bisa memberi rating
+	api.Put("/laporan/:id/rating", middleware.JWTProtected("mahasiswa", "dosen"), handler.UpdateRating)
 
 	// PUT /api/laporan/:id/admin-update → hanya admin yang bisa ubah prioritas dan petugas
 	api.Put("/laporan/:id/admin-update", middleware.JWTProtected("admin"), handler.AdminUpdateLaporan)
