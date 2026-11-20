@@ -75,7 +75,9 @@ func ConnectDatabase() {
 
 		ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 		ALTER TABLE users ADD CONSTRAINT users_role_check 
-		CHECK (role IN ('admin', 'petugas', 'mahasiswa', 'dosen'));
+		CHECK (role IN ('admin', 'petugas', 'mahasiswa', 'dosen', 'staff'));
+
+		ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(255);
 	`)
 
 	// Migrasi untuk tabel baru Notifikasi secara manual karena AutoMigrate GORM bentrok dengan relasi users
@@ -87,11 +89,20 @@ func ConnectDatabase() {
 			pesan TEXT NOT NULL,
 			is_read BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-		)
+		);
+
+		CREATE TABLE IF NOT EXISTS password_reset_tokens (
+			id SERIAL PRIMARY KEY,
+			user_id BIGINT NOT NULL,
+			token_hash VARCHAR(255) NOT NULL,
+			expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+			used BOOLEAN DEFAULT FALSE,
+			created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+		);
 	`).Error
 	
 	if err != nil {
-		log.Println("Peringatan: Gagal membuat tabel notifikasi:", err)
+		log.Println("Peringatan: Gagal membuat tabel notifikasi / password_reset_tokens:", err)
 	}
 
 	log.Println("Koneksi database berhasil.")

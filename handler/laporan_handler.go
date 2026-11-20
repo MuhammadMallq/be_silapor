@@ -24,22 +24,44 @@ func GetAllLaporan(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 	role := c.Locals("role").(string)
 
-	var laporans []model.Laporan
-	var err error
+	filter := repository.LaporanFilter{
+		Status:      c.Query("status"),
+		RolePelapor: c.Query("role_pelapor"),
+		Prioritas:   c.Query("prioritas"),
+	}
+
+	if katIDStr := c.Query("kategori_id"); katIDStr != "" {
+		if kid, err := strconv.ParseUint(katIDStr, 10, 32); err == nil {
+			filter.KategoriID = uint(kid)
+		}
+	}
+
+	if c.Query("terlambat") == "true" {
+		filter.Terlambat = true
+	}
+
+	if riwayatStr := c.Query("riwayat"); riwayatStr == "true" {
+		rTrue := true
+		filter.Riwayat = &rTrue
+	} else if riwayatStr == "false" {
+		rFalse := false
+		filter.Riwayat = &rFalse
+	}
 
 	switch role {
 	case "admin":
-		laporans, err = repository.FindAllLaporan()
+		// Admin dapat melihat seluruh laporan berdasarkan filter query
 	case "petugas":
-		laporans, err = repository.FindLaporanByKategoriPetugasID(userID)
-	case "mahasiswa", "dosen":
-		laporans, err = repository.FindLaporanByPelaporID(userID)
+		filter.PetugasID = userID
+	case "mahasiswa", "dosen", "staff":
+		filter.PelaporID = userID
 	default:
 		return c.Status(fiber.StatusForbidden).JSON(model.Response{
 			Message: "role tidak dikenali",
 		})
 	}
 
+	laporans, err := repository.FindLaporanWithFilter(filter)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{
 			Message: "gagal mengambil data laporan",
@@ -84,7 +106,7 @@ func GetLaporanByID(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 	role := c.Locals("role").(string)
 
-	if (role == "mahasiswa" || role == "dosen") && laporan.PelaporID != userID {
+	if (role == "mahasiswa" || role == "dosen" || role == "staff") && laporan.PelaporID != userID {
 		return c.Status(fiber.StatusForbidden).JSON(model.Response{
 			Message: "Akses ditolak: Anda tidak memiliki akses ke laporan ini",
 		})
@@ -217,6 +239,29 @@ func CreateLaporan(c *fiber.Ctx) error {
 		Keterangan: "Laporan baru dibuat dan sedang ditinjau oleh Admin",
 	}
 	repository.CreateRiwayat(&riwayat)
+
+	// Broadcast notifikasi laporan baru ke semua Admin
+	admins, _ := repository.FindAllAdmin()
+	pelaporName := "Pengguna"
+	if pUser, _ := repository.FindUserByID(pelaporID); pUser != nil {
+		pelaporName = pUser.Nama
+	}
+	for _, adm := range admins {
+		repository.CreateNotifikasi(&model.Notifikasi{
+			UserID:    adm.ID,
+			LaporanID: &laporan.ID,
+			Pesan:     "📋 Laporan baru dari " + pelaporName + ": " + laporan.Deskripsi + " (" + laporan.Lokasi + ")",
+		})
+	}
+
+	// Notifikasi ke petugas kategori (jika sudah ada penanggung jawabnya)
+	if kategori.PetugasID != nil {
+		repository.CreateNotifikasi(&model.Notifikasi{
+			UserID:    *kategori.PetugasID,
+			LaporanID: &laporan.ID,
+			Pesan:     "📋 Laporan baru di kategori Anda: " + laporan.Deskripsi + " (" + laporan.Lokasi + ")",
+		})
+	}
 
 	// Reload with relations
 	result, _ := repository.FindLaporanByID(laporan.ID)
@@ -367,6 +412,33 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 		Pesan:     pesanNotif,
 	})
 
+	// Notifikasi ke Petugas jika laporan diterima atau ditugaskan
+	if (req.Status == "diterima" || req.Status == "ditugaskan") && laporan.PetugasID != nil {
+		repository.CreateNotifikasi(&model.Notifikasi{
+			UserID:    *laporan.PetugasID,
+			LaporanID: &laporan.ID,
+			Pesan:     "📋 Laporan #" + strconv.Itoa(int(laporan.ID)) + " telah disetujui Admin dan siap Anda kerjakan: " + laporan.Deskripsi,
+		})
+	}
+
+	// Notifikasi ke Admin jika status laporan diproses atau selesai oleh petugas
+	if req.Status == "diproses" || req.Status == "dikerjakan" || req.Status == "selesai" {
+		admins, _ := repository.FindAllAdmin()
+		adminMsg := "🔧 Laporan #" + strconv.Itoa(int(laporan.ID)) + " mulai dikerjakan oleh petugas"
+		if req.Status == "selesai" {
+			adminMsg = "✅ Laporan #" + strconv.Itoa(int(laporan.ID)) + " telah diselesaikan oleh petugas"
+		}
+		for _, adm := range admins {
+			if adm.ID != userID {
+				repository.CreateNotifikasi(&model.Notifikasi{
+					UserID:    adm.ID,
+					LaporanID: &laporan.ID,
+					Pesan:     adminMsg,
+				})
+			}
+		}
+	}
+
 	// If status is "selesai", set tanggal_selesai and handle bukti_selesai upload
 	if req.Status == "selesai" {
 		now := time.Now()
@@ -416,7 +488,6 @@ func UpdateStatusLaporan(c *fiber.Ctx) error {
 		Status:     req.Status,
 		Keterangan: keterangan,
 	}
-	repository.CreateRiwayat(&riwayat)
 	repository.CreateRiwayat(&riwayat)
 
 	return c.JSON(model.Response{
@@ -552,6 +623,25 @@ func UpdateRating(c *fiber.Ctx) error {
 
 	if err := repository.UpdateLaporan(laporan); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(model.Response{Message: "Gagal menyimpan rating"})
+	}
+
+	// Buat notifikasi ke Petugas
+	if laporan.PetugasID != nil {
+		repository.CreateNotifikasi(&model.Notifikasi{
+			UserID:    *laporan.PetugasID,
+			LaporanID: &laporan.ID,
+			Pesan:     "⭐ Anda mendapat rating " + strconv.Itoa(req.Rating) + "/5 untuk laporan: " + laporan.Deskripsi,
+		})
+	}
+
+	// Buat notifikasi ke seluruh Admin
+	admins, _ := repository.FindAllAdmin()
+	for _, adm := range admins {
+		repository.CreateNotifikasi(&model.Notifikasi{
+			UserID:    adm.ID,
+			LaporanID: &laporan.ID,
+			Pesan:     "⭐ Laporan #" + strconv.Itoa(id) + " telah diberi rating " + strconv.Itoa(req.Rating) + "/5 oleh pelapor",
+		})
 	}
 
 	return c.JSON(model.Response{

@@ -5,17 +5,24 @@ import (
 	"be_silapor/model"
 )
 
+// LaporanFilter menampung parameter filter laporan
+type LaporanFilter struct {
+	Status      string
+	Riwayat     *bool // nil = tanpa filter; true = hanya selesai & ditolak; false = hanya laporan aktif
+	RolePelapor string
+	KategoriID  uint
+	Prioritas   string
+	Terlambat   bool
+	PelaporID   uint // > 0 jika khusus pelapor tertentu
+	PetugasID   uint // > 0 jika khusus petugas tertentu
+}
+
 // CreateLaporan menyimpan laporan baru ke tabel "laporan"
-// Dipanggil saat mahasiswa berhasil mengirim laporan kerusakan
 func CreateLaporan(laporan *model.Laporan) error {
 	return config.DB.Create(laporan).Error
 }
 
 // FindAllLaporan mengambil SEMUA laporan dari database
-// Preload("Pelapor") → ikut mengambil data user yang melapor
-// Preload("Kategori") → ikut mengambil data kategori fasilitas
-// Diurut dari yang terbaru (tanggal_lapor DESC)
-// Dipanggil oleh admin yang bisa melihat semua laporan
 func FindAllLaporan() ([]model.Laporan, error) {
 	var laporans []model.Laporan
 	err := config.DB.Preload("Pelapor").Preload("Kategori").
@@ -23,9 +30,64 @@ func FindAllLaporan() ([]model.Laporan, error) {
 	return laporans, err
 }
 
-// FindLaporanByPelaporID mengambil laporan milik satu mahasiswa saja
-// Dipakai untuk role "mahasiswa" agar hanya bisa melihat laporannya sendiri
-// pelaporID diambil dari token JWT (c.Locals("user_id"))
+// FindLaporanWithFilter mengambil laporan dengan filter dinamis di backend
+func FindLaporanWithFilter(filter LaporanFilter) ([]model.Laporan, error) {
+	var laporans []model.Laporan
+	query := config.DB.Model(&model.Laporan{}).
+		Select("laporan.*").
+		Preload("Pelapor").
+		Preload("Kategori").
+		Preload("Petugas")
+
+	if filter.PelaporID > 0 {
+		query = query.Where("laporan.pelapor_id = ?", filter.PelaporID)
+	}
+
+	if filter.PetugasID > 0 {
+		query = query.Joins("LEFT JOIN kategori_fasilitas AS k_pet ON k_pet.id = laporan.kategori_id").
+			Where("laporan.petugas_id = ? OR (laporan.petugas_id IS NULL AND k_pet.petugas_id = ?)", filter.PetugasID, filter.PetugasID)
+	}
+
+	if filter.RolePelapor != "" && filter.RolePelapor != "semua" {
+		query = query.Joins("JOIN users AS u_pelapor ON u_pelapor.id = laporan.pelapor_id").
+			Where("u_pelapor.role = ?", filter.RolePelapor)
+	}
+
+	if filter.KategoriID > 0 {
+		query = query.Where("laporan.kategori_id = ?", filter.KategoriID)
+	}
+
+	if filter.Prioritas != "" && filter.Prioritas != "semua" {
+		query = query.Where("laporan.prioritas = ?", filter.Prioritas)
+	}
+
+	if filter.Status != "" && filter.Status != "semua" {
+		if filter.Status == "aktif" {
+			query = query.Where("laporan.status NOT IN (?)", []string{"selesai", "ditolak"})
+		} else {
+			query = query.Where("laporan.status = ?", filter.Status)
+		}
+	}
+
+	if filter.Riwayat != nil {
+		if *filter.Riwayat {
+			query = query.Where("laporan.status IN (?)", []string{"selesai", "ditolak"})
+		} else {
+			query = query.Where("laporan.status NOT IN (?)", []string{"selesai", "ditolak"})
+		}
+	}
+
+	if filter.Terlambat {
+		query = query.Joins("JOIN kategori_fasilitas AS k_sla ON k_sla.id = laporan.kategori_id").
+			Where("laporan.status NOT IN (?)", []string{"selesai", "ditolak"}).
+			Where("(laporan.tenggat_waktu IS NOT NULL AND laporan.tenggat_waktu < NOW()) OR (laporan.tenggat_waktu IS NULL AND (laporan.tanggal_lapor + (COALESCE(k_sla.sla_jam, 48) * INTERVAL '1 hour')) < NOW())")
+	}
+
+	err := query.Order("laporan.tanggal_lapor DESC").Find(&laporans).Error
+	return laporans, err
+}
+
+// FindLaporanByPelaporID mengambil laporan milik satu mahasiswa/dosen/staff
 func FindLaporanByPelaporID(pelaporID uint) ([]model.Laporan, error) {
 	var laporans []model.Laporan
 	err := config.DB.Preload("Pelapor").Preload("Kategori").
@@ -35,9 +97,6 @@ func FindLaporanByPelaporID(pelaporID uint) ([]model.Laporan, error) {
 }
 
 // FindLaporanByKategoriPetugasID mengambil laporan yang kategorinya ditugaskan ke petugas tertentu
-// Menggunakan JOIN ke tabel kategori_fasilitas untuk mencari laporan
-// yang kategorinya memiliki petugas_id yang cocok
-// Dipakai untuk role "petugas" agar hanya melihat laporan yang menjadi tanggung jawabnya
 func FindLaporanByKategoriPetugasID(petugasID uint) ([]model.Laporan, error) {
 	var laporans []model.Laporan
 	err := config.DB.Preload("Pelapor").Preload("Kategori").Preload("Petugas").
@@ -48,8 +107,6 @@ func FindLaporanByKategoriPetugasID(petugasID uint) ([]model.Laporan, error) {
 }
 
 // FindLaporanByID mengambil satu laporan berdasarkan ID-nya
-// Preload bertingkat: Kategori → Petugas (untuk tahu siapa petugas yang bertanggung jawab)
-// Mengembalikan error jika laporan tidak ditemukan (dipakai untuk validasi)
 func FindLaporanByID(id uint) (*model.Laporan, error) {
 	var laporan model.Laporan
 	err := config.DB.Preload("Pelapor").Preload("Kategori").Preload("Kategori.Petugas").Preload("Petugas").
@@ -61,20 +118,16 @@ func FindLaporanByID(id uint) (*model.Laporan, error) {
 }
 
 // UpdateLaporan menyimpan perubahan data laporan ke database
-// Dipakai saat status laporan diubah atau prioritas dinaikan oleh scheduler
 func UpdateLaporan(laporan *model.Laporan) error {
 	return config.DB.Save(laporan).Error
 }
 
 // DeleteLaporan menghapus laporan dari database berdasarkan ID
-// Hanya admin yang bisa memanggil fungsi ini (diatur di router)
 func DeleteLaporan(id uint) error {
 	return config.DB.Delete(&model.Laporan{}, id).Error
 }
 
 // FindPendingForEscalation mencari laporan yang BELUM selesai dan MASIH prioritas "normal"
-// Dipanggil oleh scheduler setiap 30 menit untuk dicek apakah sudah melewati batas SLA
-// Status yang dicek: "ditinjau", "diterima", "dilaporkan", dan "ditugaskan" (belum diproses/selesai)
 func FindPendingForEscalation() ([]model.Laporan, error) {
 	var laporans []model.Laporan
 	err := config.DB.Preload("Kategori").
