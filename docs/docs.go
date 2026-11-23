@@ -24,7 +24,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Mengubah password user yang sedang login",
+                "description": "Mengubah password user yang sedang login. Password baru wajib memenuhi kriteria kuat (min 8 karakter, huruf besar, huruf kecil, angka, dan simbol).",
                 "consumes": [
                     "application/json"
                 ],
@@ -34,10 +34,10 @@ const docTemplate = `{
                 "tags": [
                     "Auth"
                 ],
-                "summary": "Ubah password",
+                "summary": "Ubah password sendiri",
                 "parameters": [
                     {
-                        "description": "Data password",
+                        "description": "Data password lama dan baru",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -75,7 +75,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Mengambil rekapitulasi data statistik laporan (total, belum selesai, terlambat, eskalasi prioritas tinggi) dan statistik per kategori",
+                "description": "Mengambil rekapitulasi data statistik laporan (total, belum selesai, terlambat, eskalasi prioritas tinggi) dan statistik per kategori. Hanya dapat diakses oleh admin.",
                 "produces": [
                     "application/json"
                 ],
@@ -101,6 +101,64 @@ const docTemplate = `{
                                 }
                             ]
                         }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/forgot-password": {
+            "post": {
+                "description": "Memulai proses reset password dengan mengirimkan kode OTP 6 digit ke email terdaftar.\nAkun harus sudah memiliki email pemulihan. Akun admin tidak dapat menggunakan fitur ini.\nOTP berlaku selama 15 menit.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Lupa password - kirim OTP",
+                "parameters": [
+                    {
+                        "description": "Username atau email terdaftar",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OTP berhasil dikirim ke email",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Akun belum memiliki email pemulihan",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Akun admin tidak dapat menggunakan fitur ini",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Pengguna tidak ditemukan",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
                     }
                 }
             }
@@ -112,7 +170,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Mengambil semua kategori fasilitas",
+                "description": "Mengambil semua kategori fasilitas beserta data petugas yang bertanggung jawab. Dapat diakses oleh semua role yang sudah login.",
                 "produces": [
                     "application/json"
                 ],
@@ -126,6 +184,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
                     }
                 }
             },
@@ -135,7 +199,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Admin menambah kategori fasilitas baru",
+                "description": "Admin menambah kategori fasilitas baru. Dapat sekaligus menugaskan petugas dan mengatur SLA.",
                 "consumes": [
                     "application/json"
                 ],
@@ -145,7 +209,7 @@ const docTemplate = `{
                 "tags": [
                     "Kategori"
                 ],
-                "summary": "Tambah kategori baru",
+                "summary": "Tambah kategori baru (Admin)",
                 "parameters": [
                     {
                         "description": "Data kategori",
@@ -169,6 +233,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
+                    },
+                    "403": {
+                        "description": "Forbidden - bukan admin",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
                     }
                 }
             }
@@ -180,7 +250,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Admin mengubah data kategori fasilitas",
+                "description": "Admin mengubah data kategori fasilitas, termasuk penugasan petugas dan SLA.",
                 "consumes": [
                     "application/json"
                 ],
@@ -190,14 +260,14 @@ const docTemplate = `{
                 "tags": [
                     "Kategori"
                 ],
-                "summary": "Ubah kategori",
+                "summary": "Ubah kategori (Admin)",
                 "parameters": [
                     {
-                        "type": "integer",
                         "description": "Kategori ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     },
                     {
                         "description": "Data kategori",
@@ -222,6 +292,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.Response"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden - bukan admin",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -236,26 +312,32 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Admin menghapus kategori fasilitas",
+                "description": "Admin menghapus kategori fasilitas berdasarkan ID.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Kategori"
                 ],
-                "summary": "Hapus kategori",
+                "summary": "Hapus kategori (Admin)",
                 "parameters": [
                     {
-                        "type": "integer",
                         "description": "Kategori ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - bukan admin",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -276,7 +358,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Mengambil daftar laporan sesuai role user",
+                "description": "Mengambil daftar laporan sesuai role user yang login:\n- mahasiswa/dosen/staff: hanya laporan milik sendiri\n- petugas: laporan yang ditugaskan kepadanya\n- admin: semua laporan",
                 "produces": [
                     "application/json"
                 ],
@@ -290,6 +372,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
                     }
                 }
             },
@@ -299,7 +387,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Mahasiswa membuat laporan kerusakan baru",
+                "description": "Membuat laporan kerusakan fasilitas baru. Dapat dilakukan oleh mahasiswa, dosen, staff, dan admin. Upload foto bersifat opsional.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -312,31 +400,31 @@ const docTemplate = `{
                 "summary": "Buat laporan baru",
                 "parameters": [
                     {
-                        "type": "string",
                         "description": "Penjelasan kerusakan",
                         "name": "deskripsi",
                         "in": "formData",
-                        "required": true
+                        "required": true,
+                        "type": "string"
                     },
                     {
-                        "type": "string",
-                        "description": "Lokasi kerusakan",
+                        "description": "Lokasi kerusakan (contoh: Gedung A Lantai 2)",
                         "name": "lokasi",
                         "in": "formData",
-                        "required": true
+                        "required": true,
+                        "type": "string"
                     },
                     {
-                        "type": "integer",
-                        "description": "Kategori ID",
+                        "description": "ID kategori fasilitas",
                         "name": "kategori_id",
                         "in": "formData",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     },
                     {
-                        "type": "file",
                         "description": "Foto bukti kerusakan (opsional)",
                         "name": "bukti",
-                        "in": "formData"
+                        "in": "formData",
+                        "type": "file"
                     }
                 ],
                 "responses": {
@@ -351,6 +439,12 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
+                    },
+                    "403": {
+                        "description": "Forbidden - role petugas tidak dapat membuat laporan",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
                     }
                 }
             }
@@ -362,7 +456,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Mengambil detail satu laporan",
+                "description": "Mengambil detail satu laporan berdasarkan ID beserta data pelapor, kategori, petugas, dan riwayat status.",
                 "produces": [
                     "application/json"
                 ],
@@ -372,16 +466,22 @@ const docTemplate = `{
                 "summary": "Detail laporan",
                 "parameters": [
                     {
-                        "type": "integer",
                         "description": "Laporan ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -400,26 +500,32 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Admin menghapus laporan",
+                "description": "Admin menghapus laporan berdasarkan ID. Hanya dapat dilakukan oleh admin.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Laporan"
                 ],
-                "summary": "Hapus laporan",
+                "summary": "Hapus laporan (Admin)",
                 "parameters": [
                     {
-                        "type": "integer",
                         "description": "Laporan ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - bukan admin",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -440,7 +546,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Admin dapat merubah tingkat prioritas laporan, menunjuk ulang petugas, atau mengatur tenggat waktu khusus (SLA kustom)",
+                "description": "Admin dapat merubah tingkat prioritas laporan, menunjuk ulang petugas, atau mengatur tenggat waktu khusus (SLA kustom). Hanya dapat dilakukan oleh admin.",
                 "consumes": [
                     "application/json"
                 ],
@@ -450,14 +556,14 @@ const docTemplate = `{
                 "tags": [
                     "Laporan"
                 ],
-                "summary": "Update pengaturan laporan khusus Admin",
+                "summary": "Update pengaturan laporan (Admin)",
                 "parameters": [
                     {
-                        "type": "integer",
                         "description": "Laporan ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     },
                     {
                         "description": "Data prioritas, penugasan, dan tenggat",
@@ -482,6 +588,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.Response"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden - bukan admin",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -498,7 +610,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Mahasiswa memberikan rating (1-5) dan ulasan (feedback) pada laporan yang sudah selesai",
+                "description": "Mahasiswa, dosen, atau staff memberikan rating (1-5) dan ulasan pada laporan yang sudah berstatus \"selesai\". Hanya pelapor yang bisa memberi rating pada laporannya sendiri.",
                 "consumes": [
                     "application/json"
                 ],
@@ -508,17 +620,17 @@ const docTemplate = `{
                 "tags": [
                     "Laporan"
                 ],
-                "summary": "Beri rating laporan",
+                "summary": "Beri rating laporan (Pelapor)",
                 "parameters": [
                     {
-                        "type": "integer",
                         "description": "Laporan ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     },
                     {
-                        "description": "Data rating \u0026 feedback",
+                        "description": "Rating dan feedback",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -541,7 +653,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Forbidden",
+                        "description": "Forbidden - bukan pelapor atau laporan belum selesai",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -562,7 +674,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Melihat timeline riwayat perubahan status",
+                "description": "Melihat timeline riwayat perubahan status laporan. Dapat diakses oleh semua role yang sudah login.",
                 "produces": [
                     "application/json"
                 ],
@@ -572,16 +684,28 @@ const docTemplate = `{
                 "summary": "Riwayat status laporan",
                 "parameters": [
                     {
-                        "type": "integer",
                         "description": "Laporan ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -596,7 +720,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Petugas mengubah status laporan",
+                "description": "Admin atau petugas mengubah status laporan. Alur status: ditinjau → diterima → diproses → selesai (atau ditolak).\nJika status \"selesai\", upload bukti foto wajib dilakukan.\nJika status \"ditolak\", field alasan_penolakan wajib diisi.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -606,27 +730,33 @@ const docTemplate = `{
                 "tags": [
                     "Laporan"
                 ],
-                "summary": "Ubah status laporan",
+                "summary": "Ubah status laporan (Admin/Petugas)",
                 "parameters": [
                     {
-                        "type": "integer",
                         "description": "Laporan ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     },
                     {
-                        "type": "string",
-                        "description": "Status baru (dilaporkan/ditugaskan/dikerjakan/selesai)",
+                        "description": "Status baru: ditinjau / diterima / diproses / selesai / ditolak",
                         "name": "status",
                         "in": "formData",
-                        "required": true
+                        "required": true,
+                        "type": "string"
                     },
                     {
-                        "type": "file",
-                        "description": "Bukti penyelesaian (wajib jika status selesai)",
+                        "description": "Alasan penolakan (wajib jika status ditolak)",
+                        "name": "alasan_penolakan",
+                        "in": "formData",
+                        "type": "string"
+                    },
+                    {
+                        "description": "Bukti penyelesaian foto (wajib jika status selesai)",
                         "name": "bukti_selesai",
-                        "in": "formData"
+                        "in": "formData",
+                        "type": "file"
                     }
                 ],
                 "responses": {
@@ -642,6 +772,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.Response"
                         }
                     },
+                    "403": {
+                        "description": "Forbidden - bukan admin atau petugas",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -653,7 +789,7 @@ const docTemplate = `{
         },
         "/api/login": {
             "post": {
-                "description": "Login dan mendapatkan JWT token",
+                "description": "Login dengan username dan password, mendapatkan JWT token yang berlaku 24 jam. Gunakan token ini sebagai Bearer token di header Authorization untuk endpoint yang memerlukan autentikasi.",
                 "consumes": [
                     "application/json"
                 ],
@@ -689,7 +825,7 @@ const docTemplate = `{
                         }
                     },
                     "401": {
-                        "description": "Unauthorized",
+                        "description": "Username atau password salah",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -704,42 +840,23 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Mengambil daftar notifikasi untuk pengguna yang sedang login",
+                "description": "Mengambil daftar notifikasi milik pengguna yang sedang login. Dapat diakses oleh semua role.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Notifikasi"
                 ],
-                "summary": "Daftar Notifikasi",
+                "summary": "Daftar notifikasi",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
-                    }
-                }
-            }
-        },
-        "/api/notifikasi/read-all": {
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Menandai seluruh notifikasi milik pengguna sebagai sudah dibaca",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notifikasi"
-                ],
-                "summary": "Tandai semua notifikasi dibaca",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -754,7 +871,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Menandai satu notifikasi spesifik sebagai sudah dibaca",
+                "description": "Menandai satu notifikasi spesifik milik pengguna yang login sebagai sudah dibaca.",
                 "produces": [
                     "application/json"
                 ],
@@ -764,16 +881,116 @@ const docTemplate = `{
                 "summary": "Tandai notifikasi dibaca",
                 "parameters": [
                     {
-                        "type": "integer",
                         "description": "Notifikasi ID",
                         "name": "id",
                         "in": "path",
-                        "required": true
+                        "required": true,
+                        "type": "integer"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/notifikasi/read-all": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menandai seluruh notifikasi milik pengguna yang sedang login sebagai sudah dibaca sekaligus.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notifikasi"
+                ],
+                "summary": "Tandai semua notifikasi dibaca",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/profile/email": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Menambahkan atau mengubah email pemulihan akun. Email ini digunakan untuk fitur lupa password. Dapat dilakukan oleh semua role yang sudah login.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Update email pemulihan akun",
+                "parameters": [
+                    {
+                        "description": "Email baru",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.UpdateProfileRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Email sudah digunakan akun lain",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -783,7 +1000,7 @@ const docTemplate = `{
         },
         "/api/register": {
             "post": {
-                "description": "Mendaftarkan user baru ke sistem",
+                "description": "Mendaftarkan user baru ke sistem. Role default adalah \"mahasiswa\".\nPassword wajib memenuhi kriteria kuat: min 8 karakter, huruf besar, huruf kecil, angka, dan simbol.",
                 "consumes": [
                     "application/json"
                 ],
@@ -819,7 +1036,307 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "Conflict",
+                        "description": "Username atau email sudah digunakan",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/reset-password": {
+            "post": {
+                "description": "Menetapkan password baru menggunakan reset_token yang diperoleh dari endpoint /api/verify-otp.\nToken berlaku 15 menit. Password baru harus memenuhi kriteria kuat.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Reset password baru",
+                "parameters": [
+                    {
+                        "description": "Reset token dan password baru",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password berhasil direset",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Password tidak memenuhi kriteria",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "401": {
+                        "description": "Token tidak valid atau kedaluwarsa",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil semua data pengguna beserta kategori yang ditangani (untuk petugas). Hanya dapat diakses oleh admin.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Daftar semua pengguna (Admin)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - bukan admin",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin membuat akun pengguna baru dengan role yang dapat ditentukan.\nRole yang tersedia: mahasiswa, dosen, staff, petugas, admin. Default role adalah \"petugas\".\nPassword wajib memenuhi kriteria kuat.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Buat pengguna baru (Admin)",
+                "parameters": [
+                    {
+                        "description": "Data pengguna baru",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RegisterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - bukan admin",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "409": {
+                        "description": "Username atau email sudah digunakan",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin menghapus akun pengguna berdasarkan ID. Hanya dapat dilakukan oleh admin.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Hapus pengguna (Admin)",
+                "parameters": [
+                    {
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "ID tidak valid",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - bukan admin",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/users/{id}/reset-password": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin mereset password pengguna secara manual, misalnya jika pengguna tidak memiliki email pemulihan. Password baru wajib memenuhi kriteria kuat.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Reset password pengguna (Admin)",
+                "parameters": [
+                    {
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "integer"
+                    },
+                    {
+                        "description": "Password baru",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.AdminResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - bukan admin",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Pengguna tidak ditemukan",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/verify-otp": {
+            "post": {
+                "description": "Memverifikasi kode OTP yang dikirim ke email. Jika valid, mengembalikan reset_token (JWT 15 menit)\nyang digunakan pada endpoint /api/reset-password untuk menetapkan password baru.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Verifikasi OTP",
+                "parameters": [
+                    {
+                        "description": "Identifier dan kode OTP",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.VerifyOTPRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Verifikasi berhasil, mengembalikan reset_token",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "400": {
+                        "description": "OTP salah atau kedaluwarsa",
+                        "schema": {
+                            "$ref": "#/definitions/model.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Pengguna tidak ditemukan",
                         "schema": {
                             "$ref": "#/definitions/model.Response"
                         }
@@ -881,6 +1398,19 @@ const docTemplate = `{
                 }
             }
         },
+        "model.AdminResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password"
+            ],
+            "properties": {
+                "new_password": {
+                    "description": "Password baru minimal 8 karakter, huruf besar, kecil, angka, dan simbol",
+                    "type": "string",
+                    "minLength": 8
+                }
+            }
+        },
         "model.AdminUpdateLaporanRequest": {
             "type": "object",
             "required": [
@@ -891,6 +1421,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "prioritas": {
+                    "description": "normal / tinggi",
                     "type": "string"
                 },
                 "tenggat_waktu": {
@@ -906,10 +1437,23 @@ const docTemplate = `{
             ],
             "properties": {
                 "new_password": {
+                    "description": "Password baru minimal 8 karakter, huruf besar, kecil, angka, dan simbol",
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
                 },
                 "old_password": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "identifier"
+            ],
+            "properties": {
+                "identifier": {
+                    "description": "Username atau Email",
                     "type": "string"
                 }
             }
@@ -924,12 +1468,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "petugas": {
-                    "description": "Relasi: satu kategori punya satu petugas (opsional)\nomitempty berarti field ini tidak dikirim jika nilainya kosong/null",
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.User"
                         }
-                    ]
+                    ],
+                    "description": "Relasi: satu kategori punya satu petugas (opsional)"
                 },
                 "petugas_id": {
                     "description": "Pointer (*uint) agar bisa bernilai null (belum ada petugas)",
@@ -964,6 +1508,14 @@ const docTemplate = `{
         "model.Laporan": {
             "type": "object",
             "properties": {
+                "alasan_penolakan": {
+                    "description": "Alasan jika ditolak oleh admin",
+                    "type": "string"
+                },
+                "bukti_penolakan": {
+                    "description": "Bukti foto jika ditolak oleh admin",
+                    "type": "string"
+                },
                 "bukti_selesai": {
                     "description": "Bukti foto setelah dikerjakan petugas",
                     "type": "string"
@@ -994,15 +1546,15 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "pelapor": {
-                    "description": "Relasi: laporan dimiliki oleh satu pelapor dan satu kategori",
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.User"
                         }
-                    ]
+                    ],
+                    "description": "Relasi: laporan dimiliki oleh satu pelapor dan satu kategori"
                 },
                 "pelapor_id": {
-                    "description": "ID mahasiswa yang membuat laporan",
+                    "description": "ID user yang membuat laporan",
                     "type": "integer"
                 },
                 "petugas": {
@@ -1020,7 +1572,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "status": {
-                    "description": "dilaporkan/ditugaskan/dikerjakan/selesai",
+                    "description": "ditinjau / diterima / diproses / selesai / ditolak",
                     "type": "string"
                 },
                 "tanggal_lapor": {
@@ -1076,18 +1628,41 @@ const docTemplate = `{
                 "username"
             ],
             "properties": {
+                "email": {
+                    "description": "Opsional, untuk pemulihan password",
+                    "type": "string"
+                },
                 "nama": {
                     "type": "string"
                 },
                 "password": {
+                    "description": "Min 8 karakter, huruf besar, kecil, angka, dan simbol",
                     "type": "string",
-                    "minLength": 6
+                    "minLength": 8
                 },
                 "role": {
-                    "description": "Opsional: mahasiswa (default) / petugas / admin",
+                    "description": "Opsional (hanya untuk endpoint admin): mahasiswa / dosen / staff / petugas / admin",
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "reset_token"
+            ],
+            "properties": {
+                "new_password": {
+                    "description": "Min 8 karakter, huruf besar, kecil, angka, dan simbol",
+                    "type": "string",
+                    "minLength": 8
+                },
+                "reset_token": {
+                    "description": "Token sementara JWT yang diperoleh dari endpoint verify-otp",
                     "type": "string"
                 }
             }
@@ -1103,6 +1678,34 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "Detail pesan dari server"
+                }
+            }
+        },
+        "model.UpdateProfileRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "description": "Email pemulihan akun",
+                    "type": "string"
+                }
+            }
+        },
+        "model.UpdateStatusRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "alasan_penolakan": {
+                    "description": "Wajib diisi jika status adalah \"ditolak\"",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "ditinjau / diterima / diproses / selesai / ditolak",
+                    "type": "string"
                 }
             }
         },
@@ -1127,7 +1730,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
-                    "description": "nilai: mahasiswa / petugas / admin",
+                    "description": "nilai: mahasiswa / dosen / staff / petugas / admin",
                     "type": "string"
                 },
                 "username": {
@@ -1135,11 +1738,28 @@ const docTemplate = `{
                     "type": "string"
                 }
             }
+        },
+        "model.VerifyOTPRequest": {
+            "type": "object",
+            "required": [
+                "identifier",
+                "otp"
+            ],
+            "properties": {
+                "identifier": {
+                    "description": "Username atau Email",
+                    "type": "string"
+                },
+                "otp": {
+                    "description": "Kode OTP 6 digit yang dikirim ke email",
+                    "type": "string"
+                }
+            }
         }
     },
     "securityDefinitions": {
         "BearerAuth": {
-            "description": "Masukkan token JWT Anda dengan format: **Bearer \u0026lt;token\u0026gt;**",
+            "description": "Masukkan token JWT Anda dengan format: **Bearer \u003ctoken\u003e**",
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
@@ -1147,18 +1767,16 @@ const docTemplate = `{
     }
 }`
 
-// SwaggerInfo holds exported Swagger Info so clients can modify it
+// SwaggerInfo holds the Swagger specification.
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "",
-	BasePath:         "/",
+	BasePath:          "/",
 	Schemes:          []string{},
 	Title:            "SiLapor API",
-	Description:      "## Sistem Pengaduan & Tracking Fasilitas Kampus\nAplikasi ini mengelola seluruh siklus pengaduan kerusakan fasilitas, mulai dari pelaporan oleh mahasiswa, penugasan dan pengerjaan oleh teknisi (petugas), hingga evaluasi dan pemantauan oleh Admin.\n\n**Perhatian Keamanan**: API ini diperuntukkan bagi penggunaan internal aplikasi SiLapor. Beberapa *endpoint* manajemen administratif bersifat tertutup dan sengaja tidak diekspos di dalam dokumentasi publik ini demi keamanan.",
+	Description:      "## Sistem Pengaduan & Tracking Fasilitas Kampus\nAplikasi ini mengelola seluruh siklus pengaduan kerusakan fasilitas, mulai dari pelaporan oleh mahasiswa/dosen/staff, penugasan dan pengerjaan oleh petugas, hingga evaluasi dan pemantauan oleh Admin.\n\n**Role yang tersedia**: mahasiswa, dosen, staff, petugas, admin\n\n**Alur status laporan**: ditinjau → diterima → diproses → selesai (atau ditolak)\n\n**Autentikasi**: Gunakan endpoint `/api/login` untuk mendapatkan JWT token, lalu klik tombol **Authorize** dan masukkan `Bearer \u003ctoken\u003e`.",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
-	LeftDelim:        "{{",
-	RightDelim:       "}}",
 }
 
 func init() {

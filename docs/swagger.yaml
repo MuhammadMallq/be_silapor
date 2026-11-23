@@ -34,11 +34,21 @@ definitions:
       total_pengguna:
         type: integer
     type: object
+  model.AdminResetPasswordRequest:
+    properties:
+      new_password:
+        description: Password baru minimal 8 karakter, huruf besar, kecil, angka, dan simbol
+        minLength: 8
+        type: string
+    required:
+    - new_password
+    type: object
   model.AdminUpdateLaporanRequest:
     properties:
       petugas_id:
         type: integer
       prioritas:
+        description: "normal / tinggi"
         type: string
       tenggat_waktu:
         type: string
@@ -48,13 +58,22 @@ definitions:
   model.ChangePasswordRequest:
     properties:
       new_password:
-        minLength: 6
+        description: Password baru minimal 8 karakter, huruf besar, kecil, angka, dan simbol
+        minLength: 8
         type: string
       old_password:
         type: string
     required:
     - new_password
     - old_password
+    type: object
+  model.ForgotPasswordRequest:
+    properties:
+      identifier:
+        description: Username atau Email
+        type: string
+    required:
+    - identifier
     type: object
   model.KategoriFasilitas:
     properties:
@@ -91,6 +110,12 @@ definitions:
     type: object
   model.Laporan:
     properties:
+      alasan_penolakan:
+        description: Alasan jika ditolak oleh admin
+        type: string
+      bukti_penolakan:
+        description: Bukti foto jika ditolak oleh admin
+        type: string
       bukti_selesai:
         description: Bukti foto setelah dikerjakan petugas
         type: string
@@ -117,7 +142,7 @@ definitions:
         - $ref: '#/definitions/model.User'
         description: 'Relasi: laporan dimiliki oleh satu pelapor dan satu kategori'
       pelapor_id:
-        description: ID mahasiswa yang membuat laporan
+        description: ID user yang membuat laporan
         type: integer
       petugas:
         $ref: '#/definitions/model.User'
@@ -125,12 +150,12 @@ definitions:
         description: ID Petugas spesifik yang ditugaskan admin
         type: integer
       prioritas:
-        description: normal / tinggi (naik otomatis jika lewat SLA)
+        description: "normal / tinggi (naik otomatis jika lewat SLA)"
         type: string
       rating:
         type: integer
       status:
-        description: dilaporkan/ditugaskan/dikerjakan/selesai
+        description: "ditinjau / diterima / diproses / selesai / ditolak"
         type: string
       tanggal_lapor:
         description: Diisi otomatis saat laporan dibuat
@@ -165,13 +190,17 @@ definitions:
     type: object
   model.RegisterRequest:
     properties:
+      email:
+        description: Opsional, untuk pemulihan password
+        type: string
       nama:
         type: string
       password:
-        minLength: 6
+        description: "Min 8 karakter, huruf besar, kecil, angka, dan simbol"
+        minLength: 8
         type: string
       role:
-        description: 'Opsional: mahasiswa (default) / petugas / admin'
+        description: 'Opsional (hanya untuk endpoint admin): mahasiswa / dosen / staff / petugas / admin'
         type: string
       username:
         type: string
@@ -179,6 +208,19 @@ definitions:
     - nama
     - password
     - username
+    type: object
+  model.ResetPasswordRequest:
+    properties:
+      new_password:
+        description: "Min 8 karakter, huruf besar, kecil, angka, dan simbol"
+        minLength: 8
+        type: string
+      reset_token:
+        description: Token sementara JWT yang diperoleh dari endpoint verify-otp
+        type: string
+    required:
+    - new_password
+    - reset_token
     type: object
   model.Response:
     properties:
@@ -190,6 +232,25 @@ definitions:
         example: Detail pesan dari server
         type: string
     type: object
+  model.UpdateProfileRequest:
+    properties:
+      email:
+        description: Email pemulihan akun
+        type: string
+    required:
+    - email
+    type: object
+  model.UpdateStatusRequest:
+    properties:
+      alasan_penolakan:
+        description: Wajib diisi jika status adalah "ditolak"
+        type: string
+      status:
+        description: "ditinjau / diterima / diproses / selesai / ditolak"
+        type: string
+    required:
+    - status
+    type: object
   model.User:
     properties:
       created_at:
@@ -198,28 +259,43 @@ definitions:
       id:
         type: integer
       kategori_fasilitas:
-        description: 'Relasi: User (Petugas) bisa memegang beberapa kategori (opsional,
-          untuk preload di GetAllUsers)'
+        description: 'Relasi: User (Petugas) bisa memegang beberapa kategori (opsional, untuk preload di GetAllUsers)'
         items:
           $ref: '#/definitions/model.KategoriFasilitas'
         type: array
       nama:
         type: string
       role:
-        description: 'nilai: mahasiswa / petugas / admin'
+        description: 'nilai: mahasiswa / dosen / staff / petugas / admin'
         type: string
       username:
         description: Harus unik, tidak boleh sama
         type: string
+    type: object
+  model.VerifyOTPRequest:
+    properties:
+      identifier:
+        description: Username atau Email
+        type: string
+      otp:
+        description: Kode OTP 6 digit yang dikirim ke email
+        type: string
+    required:
+    - identifier
+    - otp
     type: object
 info:
   contact:
     name: Tim Pengembang SiLapor
   description: |-
     ## Sistem Pengaduan & Tracking Fasilitas Kampus
-    Aplikasi ini mengelola seluruh siklus pengaduan kerusakan fasilitas, mulai dari pelaporan oleh mahasiswa, penugasan dan pengerjaan oleh teknisi (petugas), hingga evaluasi dan pemantauan oleh Admin.
+    Aplikasi ini mengelola seluruh siklus pengaduan kerusakan fasilitas, mulai dari pelaporan oleh mahasiswa/dosen/staff, penugasan dan pengerjaan oleh petugas, hingga evaluasi dan pemantauan oleh Admin.
 
-    **Perhatian Keamanan**: API ini diperuntukkan bagi penggunaan internal aplikasi SiLapor. Beberapa *endpoint* manajemen administratif bersifat tertutup dan sengaja tidak diekspos di dalam dokumentasi publik ini demi keamanan.
+    **Role yang tersedia**: mahasiswa, dosen, staff, petugas, admin
+
+    **Alur status laporan**: ditinjau → diterima → diproses → selesai (atau ditolak)
+
+    **Autentikasi**: Gunakan endpoint `/api/login` untuk mendapatkan JWT token, lalu klik tombol **Authorize** dan masukkan `Bearer <token>`.
   title: SiLapor API
   version: "1.0"
 paths:
@@ -227,9 +303,9 @@ paths:
     put:
       consumes:
       - application/json
-      description: Mengubah password user yang sedang login
+      description: Mengubah password user yang sedang login. Password baru wajib memenuhi kriteria kuat (min 8 karakter, huruf besar, huruf kecil, angka, dan simbol).
       parameters:
-      - description: Data password
+      - description: Data password lama dan baru
         in: body
         name: body
         required: true
@@ -252,13 +328,12 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
-      summary: Ubah password
+      summary: Ubah password sendiri
       tags:
       - Auth
   /api/dashboard/admin:
     get:
-      description: Mengambil rekapitulasi data statistik laporan (total, belum selesai,
-        terlambat, eskalasi prioritas tinggi) dan statistik per kategori
+      description: Mengambil rekapitulasi data statistik laporan (total, belum selesai, terlambat, eskalasi prioritas tinggi) dan statistik per kategori. Hanya dapat diakses oleh admin.
       produces:
       - application/json
       responses:
@@ -271,19 +346,64 @@ paths:
                 data:
                   $ref: '#/definitions/handler.DashboardResponse'
               type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Statistik Dashboard Admin
       tags:
       - Dashboard
+  /api/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Memulai proses reset password dengan mengirimkan kode OTP 6 digit ke email terdaftar.
+        Akun harus sudah memiliki email pemulihan. Akun admin tidak dapat menggunakan fitur ini.
+        OTP berlaku selama 15 menit.
+      parameters:
+      - description: Username atau email terdaftar
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OTP berhasil dikirim ke email
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Akun belum memiliki email pemulihan
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Akun admin tidak dapat menggunakan fitur ini
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Pengguna tidak ditemukan
+          schema:
+            $ref: '#/definitions/model.Response'
+      summary: Lupa password - kirim OTP
+      tags:
+      - Auth
   /api/kategori:
     get:
-      description: Mengambil semua kategori fasilitas
+      description: Mengambil semua kategori fasilitas beserta data petugas yang bertanggung jawab. Dapat diakses oleh semua role yang sudah login.
       produces:
       - application/json
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/model.Response'
       security:
@@ -294,7 +414,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Admin menambah kategori fasilitas baru
+      description: Admin menambah kategori fasilitas baru. Dapat sekaligus menugaskan petugas dan mengatur SLA.
       parameters:
       - description: Data kategori
         in: body
@@ -313,14 +433,18 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin
+          schema:
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
-      summary: Tambah kategori baru
+      summary: Tambah kategori baru (Admin)
       tags:
       - Kategori
   /api/kategori/{id}:
     delete:
-      description: Admin menghapus kategori fasilitas
+      description: Admin menghapus kategori fasilitas berdasarkan ID.
       parameters:
       - description: Kategori ID
         in: path
@@ -334,19 +458,23 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin
+          schema:
+            $ref: '#/definitions/model.Response'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
-      summary: Hapus kategori
+      summary: Hapus kategori (Admin)
       tags:
       - Kategori
     put:
       consumes:
       - application/json
-      description: Admin mengubah data kategori fasilitas
+      description: Admin mengubah data kategori fasilitas, termasuk penugasan petugas dan SLA.
       parameters:
       - description: Kategori ID
         in: path
@@ -370,23 +498,35 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin
+          schema:
+            $ref: '#/definitions/model.Response'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
-      summary: Ubah kategori
+      summary: Ubah kategori (Admin)
       tags:
       - Kategori
   /api/laporan:
     get:
-      description: Mengambil daftar laporan sesuai role user
+      description: |-
+        Mengambil daftar laporan sesuai role user yang login:
+        - mahasiswa/dosen/staff: hanya laporan milik sendiri
+        - petugas: laporan yang ditugaskan kepadanya
+        - admin: semua laporan
       produces:
       - application/json
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/model.Response'
       security:
@@ -397,19 +537,19 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Mahasiswa membuat laporan kerusakan baru
+      description: Membuat laporan kerusakan fasilitas baru. Dapat dilakukan oleh mahasiswa, dosen, staff, dan admin. Upload foto bersifat opsional.
       parameters:
       - description: Penjelasan kerusakan
         in: formData
         name: deskripsi
         required: true
         type: string
-      - description: Lokasi kerusakan
+      - description: Lokasi kerusakan (contoh - Gedung A Lantai 2)
         in: formData
         name: lokasi
         required: true
         type: string
-      - description: Kategori ID
+      - description: ID kategori fasilitas
         in: formData
         name: kategori_id
         required: true
@@ -429,6 +569,10 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - role petugas tidak dapat membuat laporan
+          schema:
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Buat laporan baru
@@ -436,7 +580,7 @@ paths:
       - Laporan
   /api/laporan/{id}:
     delete:
-      description: Admin menghapus laporan
+      description: Admin menghapus laporan berdasarkan ID. Hanya dapat dilakukan oleh admin.
       parameters:
       - description: Laporan ID
         in: path
@@ -448,6 +592,10 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin
           schema:
             $ref: '#/definitions/model.Response'
         "404":
@@ -456,11 +604,11 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
-      summary: Hapus laporan
+      summary: Hapus laporan (Admin)
       tags:
       - Laporan
     get:
-      description: Mengambil detail satu laporan
+      description: Mengambil detail satu laporan berdasarkan ID beserta data pelapor, kategori, petugas, dan riwayat status.
       parameters:
       - description: Laporan ID
         in: path
@@ -472,6 +620,10 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
           schema:
             $ref: '#/definitions/model.Response'
         "404":
@@ -487,8 +639,7 @@ paths:
     put:
       consumes:
       - application/json
-      description: Admin dapat merubah tingkat prioritas laporan, menunjuk ulang petugas,
-        atau mengatur tenggat waktu khusus (SLA kustom)
+      description: Admin dapat merubah tingkat prioritas laporan, menunjuk ulang petugas, atau mengatur tenggat waktu khusus (SLA kustom). Hanya dapat dilakukan oleh admin.
       parameters:
       - description: Laporan ID
         in: path
@@ -512,28 +663,31 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin
+          schema:
+            $ref: '#/definitions/model.Response'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
-      summary: Update pengaturan laporan khusus Admin
+      summary: Update pengaturan laporan (Admin)
       tags:
       - Laporan
   /api/laporan/{id}/rating:
     put:
       consumes:
       - application/json
-      description: Mahasiswa memberikan rating (1-5) dan ulasan (feedback) pada laporan
-        yang sudah selesai
+      description: Mahasiswa, dosen, atau staff memberikan rating (1-5) dan ulasan pada laporan yang sudah berstatus "selesai". Hanya pelapor yang bisa memberi rating pada laporannya sendiri.
       parameters:
       - description: Laporan ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Data rating & feedback
+      - description: Rating dan feedback
         in: body
         name: body
         required: true
@@ -551,7 +705,7 @@ paths:
           schema:
             $ref: '#/definitions/model.Response'
         "403":
-          description: Forbidden
+          description: Forbidden - bukan pelapor atau laporan belum selesai
           schema:
             $ref: '#/definitions/model.Response'
         "404":
@@ -560,12 +714,12 @@ paths:
             $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
-      summary: Beri rating laporan
+      summary: Beri rating laporan (Pelapor)
       tags:
       - Laporan
   /api/laporan/{id}/riwayat:
     get:
-      description: Melihat timeline riwayat perubahan status
+      description: Melihat timeline riwayat perubahan status laporan. Dapat diakses oleh semua role yang sudah login.
       parameters:
       - description: Laporan ID
         in: path
@@ -579,6 +733,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Riwayat status laporan
@@ -588,19 +750,26 @@ paths:
     put:
       consumes:
       - multipart/form-data
-      description: Petugas mengubah status laporan
+      description: |-
+        Admin atau petugas mengubah status laporan. Alur status: ditinjau → diterima → diproses → selesai (atau ditolak).
+        Jika status "selesai", upload bukti foto wajib dilakukan.
+        Jika status "ditolak", field alasan_penolakan wajib diisi.
       parameters:
       - description: Laporan ID
         in: path
         name: id
         required: true
         type: integer
-      - description: Status baru (dilaporkan/ditugaskan/dikerjakan/selesai)
+      - description: "Status baru: ditinjau / diterima / diproses / selesai / ditolak"
         in: formData
         name: status
         required: true
         type: string
-      - description: Bukti penyelesaian (wajib jika status selesai)
+      - description: Alasan penolakan (wajib jika status ditolak)
+        in: formData
+        name: alasan_penolakan
+        type: string
+      - description: Bukti penyelesaian foto (wajib jika status selesai)
         in: formData
         name: bukti_selesai
         type: file
@@ -615,20 +784,24 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin atau petugas
+          schema:
+            $ref: '#/definitions/model.Response'
         "404":
           description: Not Found
           schema:
             $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
-      summary: Ubah status laporan
+      summary: Ubah status laporan (Admin/Petugas)
       tags:
       - Laporan
   /api/login:
     post:
       consumes:
       - application/json
-      description: Login dan mendapatkan JWT token
+      description: Login dengan username dan password, mendapatkan JWT token yang berlaku 24 jam. Gunakan token ini sebagai Bearer token di header Authorization untuk endpoint yang memerlukan autentikasi.
       parameters:
       - description: Data login
         in: body
@@ -648,7 +821,7 @@ paths:
           schema:
             $ref: '#/definitions/model.Response'
         "401":
-          description: Unauthorized
+          description: Username atau password salah
           schema:
             $ref: '#/definitions/model.Response'
       summary: Login user
@@ -656,7 +829,7 @@ paths:
       - Auth
   /api/notifikasi:
     get:
-      description: Mengambil daftar notifikasi untuk pengguna yang sedang login
+      description: Mengambil daftar notifikasi milik pengguna yang sedang login. Dapat diakses oleh semua role.
       produces:
       - application/json
       responses:
@@ -664,14 +837,18 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
-      summary: Daftar Notifikasi
+      summary: Daftar notifikasi
       tags:
       - Notifikasi
   /api/notifikasi/{id}/read:
     put:
-      description: Menandai satu notifikasi spesifik sebagai sudah dibaca
+      description: Menandai satu notifikasi spesifik milik pengguna yang login sebagai sudah dibaca.
       parameters:
       - description: Notifikasi ID
         in: path
@@ -685,6 +862,14 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Tandai notifikasi dibaca
@@ -692,7 +877,7 @@ paths:
       - Notifikasi
   /api/notifikasi/read-all:
     put:
-      description: Menandai seluruh notifikasi milik pengguna sebagai sudah dibaca
+      description: Menandai seluruh notifikasi milik pengguna yang sedang login sebagai sudah dibaca sekaligus.
       produces:
       - application/json
       responses:
@@ -700,16 +885,58 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.Response'
       security:
       - BearerAuth: []
       summary: Tandai semua notifikasi dibaca
       tags:
       - Notifikasi
+  /api/profile/email:
+    put:
+      consumes:
+      - application/json
+      description: Menambahkan atau mengubah email pemulihan akun. Email ini digunakan untuk fitur lupa password. Dapat dilakukan oleh semua role yang sudah login.
+      parameters:
+      - description: Email baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.Response'
+        "409":
+          description: Email sudah digunakan akun lain
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Update email pemulihan akun
+      tags:
+      - Auth
   /api/register:
     post:
       consumes:
       - application/json
-      description: Mendaftarkan user baru ke sistem
+      description: |-
+        Mendaftarkan user baru ke sistem. Role default adalah "mahasiswa".
+        Password wajib memenuhi kriteria kuat: min 8 karakter, huruf besar, huruf kecil, angka, dan simbol.
       parameters:
       - description: Data registrasi
         in: body
@@ -729,10 +956,209 @@ paths:
           schema:
             $ref: '#/definitions/model.Response'
         "409":
-          description: Conflict
+          description: Username atau email sudah digunakan
           schema:
             $ref: '#/definitions/model.Response'
       summary: Register user baru
+      tags:
+      - Auth
+  /api/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Menetapkan password baru menggunakan reset_token yang diperoleh dari endpoint /api/verify-otp.
+        Token berlaku 15 menit. Password baru harus memenuhi kriteria kuat.
+      parameters:
+      - description: Reset token dan password baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password berhasil direset
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Password tidak memenuhi kriteria
+          schema:
+            $ref: '#/definitions/model.Response'
+        "401":
+          description: Token tidak valid atau kedaluwarsa
+          schema:
+            $ref: '#/definitions/model.Response'
+      summary: Reset password baru
+      tags:
+      - Auth
+  /api/users:
+    get:
+      description: Mengambil semua data pengguna beserta kategori yang ditangani (untuk petugas). Hanya dapat diakses oleh admin.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Daftar semua pengguna (Admin)
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Admin membuat akun pengguna baru dengan role yang dapat ditentukan.
+        Role yang tersedia: mahasiswa, dosen, staff, petugas, admin. Default role adalah "petugas".
+        Password wajib memenuhi kriteria kuat.
+      parameters:
+      - description: Data pengguna baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin
+          schema:
+            $ref: '#/definitions/model.Response'
+        "409":
+          description: Username atau email sudah digunakan
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Buat pengguna baru (Admin)
+      tags:
+      - Users
+  /api/users/{id}:
+    delete:
+      description: Admin menghapus akun pengguna berdasarkan ID. Hanya dapat dilakukan oleh admin.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: ID tidak valid
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin
+          schema:
+            $ref: '#/definitions/model.Response'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Hapus pengguna (Admin)
+      tags:
+      - Users
+  /api/users/{id}/reset-password:
+    put:
+      consumes:
+      - application/json
+      description: Admin mereset password pengguna secara manual, misalnya jika pengguna tidak memiliki email pemulihan. Password baru wajib memenuhi kriteria kuat.
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Password baru
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.AdminResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.Response'
+        "403":
+          description: Forbidden - bukan admin
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Pengguna tidak ditemukan
+          schema:
+            $ref: '#/definitions/model.Response'
+      security:
+      - BearerAuth: []
+      summary: Reset password pengguna (Admin)
+      tags:
+      - Users
+  /api/verify-otp:
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Memverifikasi kode OTP yang dikirim ke email. Jika valid, mengembalikan reset_token (JWT 15 menit)
+        yang digunakan pada endpoint /api/reset-password untuk menetapkan password baru.
+      parameters:
+      - description: Identifier dan kode OTP
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/model.VerifyOTPRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verifikasi berhasil, mengembalikan reset_token
+          schema:
+            $ref: '#/definitions/model.Response'
+        "400":
+          description: OTP salah atau kedaluwarsa
+          schema:
+            $ref: '#/definitions/model.Response'
+        "404":
+          description: Pengguna tidak ditemukan
+          schema:
+            $ref: '#/definitions/model.Response'
+      summary: Verifikasi OTP
       tags:
       - Auth
 securityDefinitions:
