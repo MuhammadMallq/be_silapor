@@ -15,7 +15,7 @@ import (
 // @version 1.0
 // @description ## Sistem Pengaduan & Tracking Fasilitas Kampus
 // @description Aplikasi ini mengelola seluruh siklus pengaduan kerusakan fasilitas, mulai dari pelaporan oleh mahasiswa, penugasan dan pengerjaan oleh teknisi (petugas), hingga evaluasi dan pemantauan oleh Admin.
-// @description 
+// @description
 // @description **Perhatian Keamanan**: API ini diperuntukkan bagi penggunaan internal aplikasi SiLapor. Beberapa *endpoint* manajemen administratif bersifat tertutup dan sengaja tidak diekspos di dalam dokumentasi publik ini demi keamanan.
 // @contact.name Tim Pengembang SiLapor
 // @BasePath /

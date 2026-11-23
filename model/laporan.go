@@ -6,18 +6,18 @@ import "time"
 // Menyimpan setiap pengaduan kerusakan fasilitas yang dikirim mahasiswa
 type Laporan struct {
 	ID             uint       `json:"id" gorm:"primaryKey"`
-	PelaporID      uint       `json:"pelapor_id" gorm:"not null"`   // ID mahasiswa yang membuat laporan
-	KategoriID     uint       `json:"kategori_id" gorm:"not null"`  // ID kategori fasilitas yang dilaporkan
-	Lokasi         string     `json:"lokasi" gorm:"not null"`       // Lokasi kerusakan (misal: "Gedung A Lantai 2")
-	Deskripsi      string     `json:"deskripsi" gorm:"not null"`    // Penjelasan detail kerusakan
-	FotoURL        string     `json:"foto_url"`                     // Link foto kerusakan (opsional)
-	Status         string     `json:"status" gorm:"not null;default:ditinjau"` // ditinjau/diterima/diproses/selesai/ditolak
-	Prioritas      string     `json:"prioritas" gorm:"not null;default:normal"`  // normal / tinggi (naik otomatis jika lewat SLA)
-	TanggalLapor   time.Time  `json:"tanggal_lapor" gorm:"autoCreateTime"` // Diisi otomatis saat laporan dibuat
-	TanggalSelesai *time.Time `json:"tanggal_selesai"` // Diisi saat status berubah menjadi "selesai"
-	BuktiSelesai   string     `json:"bukti_selesai"`   // Bukti foto setelah dikerjakan petugas
+	PelaporID      uint       `json:"pelapor_id" gorm:"not null"`               // ID mahasiswa yang membuat laporan
+	KategoriID     uint       `json:"kategori_id" gorm:"not null"`              // ID kategori fasilitas yang dilaporkan
+	Lokasi         string     `json:"lokasi" gorm:"not null"`                   // Lokasi kerusakan (misal: "Gedung A Lantai 2")
+	Deskripsi      string     `json:"deskripsi" gorm:"not null"`                // Penjelasan detail kerusakan
+	FotoURL        string     `json:"foto_url"`                                 // Link foto kerusakan (opsional)
+	Status         string     `json:"status" gorm:"not null;default:ditinjau"`  // ditinjau/diterima/diproses/selesai/ditolak
+	Prioritas      string     `json:"prioritas" gorm:"not null;default:normal"` // normal / tinggi (naik otomatis jika lewat SLA)
+	TanggalLapor   time.Time  `json:"tanggal_lapor" gorm:"autoCreateTime"`      // Diisi otomatis saat laporan dibuat
+	TanggalSelesai *time.Time `json:"tanggal_selesai"`                          // Diisi saat status berubah menjadi "selesai"
+	BuktiSelesai   string     `json:"bukti_selesai"`                            // Bukti foto setelah dikerjakan petugas
 
-	PetugasID       *uint      `json:"petugas_id"`   // ID Petugas spesifik yang ditugaskan admin
+	PetugasID       *uint      `json:"petugas_id"`    // ID Petugas spesifik yang ditugaskan admin
 	TenggatWaktu    *time.Time `json:"tenggat_waktu"` // Tenggat waktu spesifik dari admin
 	Rating          int        `json:"rating" gorm:"default:0"`
 	Feedback        string     `json:"feedback"`
@@ -34,9 +34,9 @@ type Laporan struct {
 // Mencatat setiap perubahan status pada sebuah laporan (seperti timeline/log)
 type RiwayatStatus struct {
 	ID         uint      `json:"id" gorm:"primaryKey"`
-	LaporanID  uint      `json:"laporan_id" gorm:"not null"` // Laporan mana yang berubah statusnya
-	Status     string    `json:"status" gorm:"not null"`     // Status baru saat perubahan terjadi
-	Keterangan string    `json:"keterangan"`                 // Penjelasan singkat perubahan status
+	LaporanID  uint      `json:"laporan_id" gorm:"not null"`  // Laporan mana yang berubah statusnya
+	Status     string    `json:"status" gorm:"not null"`      // Status baru saat perubahan terjadi
+	Keterangan string    `json:"keterangan"`                  // Penjelasan singkat perubahan status
 	Waktu      time.Time `json:"waktu" gorm:"autoCreateTime"` // Waktu perubahan status
 
 	// Relasi ke tabel laporan
@@ -44,8 +44,8 @@ type RiwayatStatus struct {
 }
 
 // TableName memberi tahu GORM nama tabel yang digunakan di database
-func (Laporan) TableName() string           { return "laporan" }
-func (RiwayatStatus) TableName() string     { return "riwayat_status" }
+func (Laporan) TableName() string       { return "laporan" }
+func (RiwayatStatus) TableName() string { return "riwayat_status" }
 
 // CreateLaporanRequest adalah body JSON untuk endpoint POST /laporan
 type CreateLaporanRequest struct {

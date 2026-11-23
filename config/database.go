@@ -41,7 +41,7 @@ func ConnectDatabase() {
 
 	log.Println("Berhasil terhubung ke database Supabase")
 
-	// Tambahkan kolom bukti_selesai secara manual jika belum ada, 
+	// Tambahkan kolom bukti_selesai secara manual jika belum ada,
 	// agar tidak memicu error AutoMigrate pada relasi tabel users.
 	if !DB.Migrator().HasColumn(&model.Laporan{}, "BuktiSelesai") {
 		err = DB.Migrator().AddColumn(&model.Laporan{}, "BuktiSelesai")
@@ -54,18 +54,18 @@ func ConnectDatabase() {
 		log.Println("Kolom bukti_selesai sudah ada di tabel laporan.")
 	}
 
-    // Migrasi manual untuk kolom PetugasID, TenggatWaktu, Rating, Feedback, AlasanPenolakan, BuktiPenolakan
-    columnsToAdd := []string{"PetugasID", "TenggatWaktu", "Rating", "Feedback", "AlasanPenolakan", "BuktiPenolakan"}
-    for _, col := range columnsToAdd {
-        if !DB.Migrator().HasColumn(&model.Laporan{}, col) {
-            err = DB.Migrator().AddColumn(&model.Laporan{}, col)
-            if err != nil {
-                log.Println("Peringatan: Gagal menambahkan kolom", col, ":", err)
-            } else {
-                log.Println("Berhasil menambahkan kolom", col, "ke tabel laporan.")
-            }
-        }
-    }
+	// Migrasi manual untuk kolom PetugasID, TenggatWaktu, Rating, Feedback, AlasanPenolakan, BuktiPenolakan
+	columnsToAdd := []string{"PetugasID", "TenggatWaktu", "Rating", "Feedback", "AlasanPenolakan", "BuktiPenolakan"}
+	for _, col := range columnsToAdd {
+		if !DB.Migrator().HasColumn(&model.Laporan{}, col) {
+			err = DB.Migrator().AddColumn(&model.Laporan{}, col)
+			if err != nil {
+				log.Println("Peringatan: Gagal menambahkan kolom", col, ":", err)
+			} else {
+				log.Println("Berhasil menambahkan kolom", col, "ke tabel laporan.")
+			}
+		}
+	}
 
 	// Update constraint status & role
 	DB.Exec(`
@@ -100,7 +100,7 @@ func ConnectDatabase() {
 			created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 		);
 	`).Error
-	
+
 	if err != nil {
 		log.Println("Peringatan: Gagal membuat tabel notifikasi / password_reset_tokens:", err)
 	}

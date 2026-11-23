@@ -123,7 +123,7 @@ func UpdateKategori(c *fiber.Ctx) error {
 	if req.NamaKategori != "" {
 		updates["nama_kategori"] = req.NamaKategori
 	}
-	
+
 	// Update PetugasID (termasuk mengizinkan nil jika dikirim dari frontend)
 	updates["petugas_id"] = req.PetugasID
 

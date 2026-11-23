@@ -5,7 +5,7 @@ package model
 type KategoriFasilitas struct {
 	ID           uint   `json:"id" gorm:"primaryKey"`
 	NamaKategori string `json:"nama_kategori" gorm:"not null"`
-	PetugasID    *uint  `json:"petugas_id"`                   // Pointer (*uint) agar bisa bernilai null (belum ada petugas)
+	PetugasID    *uint  `json:"petugas_id"`                         // Pointer (*uint) agar bisa bernilai null (belum ada petugas)
 	SLAJam       int    `json:"sla_jam" gorm:"not null;default:48"` // Batas waktu penanganan dalam jam (default 48 jam)
 
 	// Relasi: satu kategori punya satu petugas (opsional)

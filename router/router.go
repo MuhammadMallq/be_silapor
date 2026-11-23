@@ -16,20 +16,27 @@ func SetupRoutes(app *fiber.App) {
 	})
 
 	// Endpoint Swagger UI
+	app.Get("/docs", func(c *fiber.Ctx) error {
+		return c.Redirect("/docs/index.html")
+	})
+	app.Get("/swagger", func(c *fiber.Ctx) error {
+		return c.Redirect("/swagger/index.html")
+	})
 	app.Get("/docs/*", swagger.HandlerDefault)
+	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	api := app.Group("/api")
 
 	// ── Auth Routes (Publik) ─────────────────────────────────────────────────
-	api.Post("/register", handler.Register)                     // Daftar akun baru
-	api.Post("/login", handler.Login)                           // Login dan dapat token JWT
-	api.Post("/forgot-password", handler.ForgotPassword)       // Minta OTP lupa password
-	api.Post("/verify-otp", handler.VerifyOTP)                 // Verifikasi OTP
-	api.Post("/reset-password", handler.ResetPassword)         // Reset kata sandi baru
+	api.Post("/register", handler.Register)              // Daftar akun baru
+	api.Post("/login", handler.Login)                    // Login dan dapat token JWT
+	api.Post("/forgot-password", handler.ForgotPassword) // Minta OTP lupa password
+	api.Post("/verify-otp", handler.VerifyOTP)           // Verifikasi OTP
+	api.Post("/reset-password", handler.ResetPassword)   // Reset kata sandi baru
 
 	// ── Protected Routes (Semua role yang sudah login) ────────────────────────
 	protected := api.Group("/", middleware.JWTProtected())
-	protected.Put("/changepassword", handler.ChangePassword)   // Ganti password sendiri
+	protected.Put("/changepassword", handler.ChangePassword)    // Ganti password sendiri
 	protected.Put("/profile/email", handler.UpdateProfileEmail) // Update email pemulihan akun
 
 	// ── Kategori Routes ───────────────────────────────────────────────────────

@@ -48,7 +48,7 @@ func UploadToSupabase(fileHeader *multipart.FileHeader) (string, error) {
 	// Buat nama file menjadi unik (tambahkan timestamp) agar tidak ditolak jika ada nama duplikat
 	timestamp := time.Now().UnixMilli()
 	uniqueFilename := fmt.Sprintf("%d_%s", timestamp, fileHeader.Filename)
-	
+
 	// Encode nama file agar aman dari spasi dan karakter spesial di URL
 	safeFilename := url.PathEscape(uniqueFilename)
 
@@ -81,6 +81,6 @@ func UploadToSupabase(fileHeader *multipart.FileHeader) (string, error) {
 	// Buat URL publik
 	// Supabase API format: GET /storage/v1/object/public/[bucket_name]/[file_name]
 	publicURL := fmt.Sprintf("%s/storage/v1/object/public/%s/%s", supabaseURL, supabaseBucket, safeFilename)
-	
+
 	return publicURL, nil
 }

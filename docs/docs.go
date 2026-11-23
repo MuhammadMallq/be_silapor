@@ -276,7 +276,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Mengambil daftar laporan sesuai role user",
+                "description": "Mengambil daftar laporan sesuai role user (bisa difilter berdasarkan id, status, kategori, prioritas, dll)",
                 "produces": [
                     "application/json"
                 ],
@@ -284,6 +284,50 @@ const docTemplate = `{
                     "Laporan"
                 ],
                 "summary": "Daftar laporan",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filter berdasarkan ID laporan spesifik",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter status (ditinjau/diterima/diproses/selesai/ditolak/aktif)",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filter berdasarkan ID kategori",
+                        "name": "kategori_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter prioritas (rendah/normal/tinggi)",
+                        "name": "prioritas",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter role pelapor (mahasiswa/dosen/staff)",
+                        "name": "role_pelapor",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Hanya tampilkan laporan yang melewati SLA",
+                        "name": "terlambat",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Filter riwayat (true = selesai/ditolak, false = aktif)",
+                        "name": "riwayat",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
