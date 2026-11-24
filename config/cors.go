@@ -13,6 +13,8 @@ var allowedOrigins = []string{
 	"http://localhost:5173",
 	"http://localhost:5174",
 	"https://fe-silapor.vercel.app",
+	"http://127.0.0.1:3001",
+	"http://192.168.0.103",
 }
 
 // GetAllowedOrigins mengembalikan daftar origin yang diizinkan untuk mengakses API
